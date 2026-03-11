@@ -1,0 +1,88 @@
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { CartProvider } from '@/lib/cart-context';
+import { AuthProvider } from '@/lib/auth-context';
+import { Toaster } from '@/components/ui/toaster';
+import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://streetwear.example.com'),
+  title: {
+    default: 'Streetwear - Premium Urban Fashion',
+    template: '%s | Streetwear',
+  },
+  description: 'Discover premium streetwear with minimal aesthetic and bold attitude. Shop the latest collections of hoodies, t-shirts, and accessories.',
+  keywords: ['streetwear', 'fashion', 'urban clothing', 'hoodies', 't-shirts', 'accessories', 'premium fashion'],
+  authors: [{ name: 'Streetwear' }],
+  creator: 'Streetwear',
+  publisher: 'Streetwear',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://streetwear.example.com',
+    title: 'Streetwear - Premium Urban Fashion',
+    description: 'Discover premium streetwear with minimal aesthetic and bold attitude',
+    siteName: 'Streetwear',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Streetwear - Premium Urban Fashion',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Streetwear - Premium Urban Fashion',
+    description: 'Discover premium streetwear with minimal aesthetic and bold attitude',
+    creator: '@streetwear',
+    images: ['/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'google-site-verification-code',
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <AuthProvider>
+          <CartProvider>
+            <AnalyticsTracker />
+            {children}
+            <Toaster />
+          </CartProvider>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
