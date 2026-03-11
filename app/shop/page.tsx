@@ -125,27 +125,13 @@ export default function ShopPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<string>('newest');
 
-  const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
+  const categories = ['All', 'Limited', 'Mens', 'Womens'];
 
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = products.filter((product) => {
-      return selectedCategory === 'All' || product.category === selectedCategory;
-    });
-
-    if (sortBy === 'newest') {
-      filtered = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    } else if (sortBy === 'price-low') {
-      filtered = [...filtered].sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price-high') {
-      filtered = [...filtered].sort((a, b) => b.price - a.price);
-    } else if (sortBy === 'popular') {
-      filtered = [...filtered].sort((a, b) => b.popularity - a.popularity);
-    }
-
-    return filtered;
-  }, [selectedCategory, sortBy]);
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'All') return products;
+    return products.filter((product) => product.category === selectedCategory);
+  }, [selectedCategory]);
 
   return (
     <>
@@ -156,38 +142,17 @@ export default function ShopPage() {
       />
 
       <main className="bg-background min-h-screen">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-12">
-          {/* Header */}
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-1">Shop</h1>
-              <p className="text-xs text-muted-foreground tracking-widest">{filteredAndSortedProducts.length} items</p>
-            </div>
-
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-transparent border-0 border-b border-foreground/20 text-xs uppercase tracking-widest text-foreground/70 focus:outline-none focus:border-foreground/50 cursor-pointer pb-1 pr-6"
-              aria-label="Sort products"
-            >
-              <option value="newest">Newest</option>
-              <option value="price-low">Price ↑</option>
-              <option value="price-high">Price ↓</option>
-              <option value="popular">Popular</option>
-            </select>
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex gap-6 mb-12 border-b border-foreground/10 pb-6 overflow-x-auto scrollbar-hide">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-16 py-16">
+          {/* Category Tabs */}
+          <div className="flex items-center justify-center gap-10 mb-16 border-b border-foreground/10 pb-8">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`text-xs uppercase tracking-widest whitespace-nowrap transition-colors pb-1 ${
+                className={`text-xs uppercase tracking-[0.25em] whitespace-nowrap transition-colors ${
                   selectedCategory === category
-                    ? 'text-foreground border-b border-foreground'
-                    : 'text-muted-foreground hover:text-foreground/70'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground/60'
                 }`}
               >
                 {category}
@@ -196,15 +161,15 @@ export default function ShopPage() {
           </div>
 
           {/* Product Grid */}
-          {filteredAndSortedProducts.length === 0 ? (
-            <div className="flex items-center justify-center py-24">
-              <p className="text-muted-foreground text-sm tracking-widest">No products found</p>
+          {filteredProducts.length === 0 ? (
+            <div className="flex items-center justify-center py-32">
+              <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">No products found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-              {filteredAndSortedProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.sku}`} className="group">
-                  <div className="relative aspect-[3/4] bg-secondary overflow-hidden mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-16">
+              {filteredProducts.map((product) => (
+                <Link key={product.id} href={`/product/${product.sku}`} className="group flex flex-col items-center">
+                  <div className="relative w-full aspect-[3/4] bg-secondary overflow-hidden mb-5">
                     <Image
                       src={product.image}
                       alt={product.name}
@@ -215,8 +180,9 @@ export default function ShopPage() {
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
-                  <div>
-                    <h3 className="text-xs uppercase tracking-widest mb-1 group-hover:text-muted-foreground transition-colors">
+                  <div className="text-center space-y-1.5">
+                    <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">{product.sku}</p>
+                    <h3 className="text-xs uppercase tracking-[0.2em] group-hover:text-muted-foreground transition-colors">
                       {product.name}
                     </h3>
                     <p className="text-xs text-muted-foreground">

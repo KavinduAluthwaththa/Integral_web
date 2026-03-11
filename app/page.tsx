@@ -29,13 +29,6 @@ const featuredProducts = [
   },
 ];
 
-const lookbookImages = [
-  'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/2983464/pexels-photo-2983464.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1040424/pexels-photo-1040424.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/2090785/pexels-photo-2090785.jpeg?auto=compress&cs=tinysrgb&w=800',
-];
 
 export default function Home() {
   const { itemCount } = useCart();
@@ -65,9 +58,11 @@ export default function Home() {
             <h1 className="text-6xl md:text-7xl lg:text-8xl tracking-tighter">
               Urban Essence
             </h1>
-            <Button variant="default" size="lg" className="group" aria-label="Explore our collection">
-              Explore Collection
-              <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={20} aria-hidden="true" />
+            <Button variant="default" size="lg" className="group" aria-label="Visit shop" asChild>
+              <a href="/shop">
+                Visit Shop
+                <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={20} aria-hidden="true" />
+              </a>
             </Button>
           </div>
         </section>
@@ -130,33 +125,6 @@ export default function Home() {
                   loading="lazy"
                   className="object-cover"
                 />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Lookbook */}
-        <section className="py-4xl border-y-2 border-foreground bg-secondary/20">
-          <div className="container mx-auto px-md space-y-2xl">
-            <h2 className="text-4xl md:text-5xl">Lookbook</h2>
-            <div className="overflow-x-auto">
-              <div className="flex gap-lg pb-md" style={{ width: 'max-content' }}>
-                {lookbookImages.map((image, index) => (
-                  <div
-                    key={index}
-                    className="relative w-80 h-96 bg-background border-2 border-foreground flex-shrink-0 overflow-hidden group"
-                  >
-                    <Image
-                      src={image}
-                      alt={`Lookbook ${index + 1}`}
-                      fill
-                      sizes="320px"
-                      quality={80}
-                      loading="lazy"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                ))}
               </div>
             </div>
           </div>

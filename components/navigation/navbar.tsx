@@ -19,7 +19,6 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
 
   const navLinks = [
     { href: '/shop', label: 'Shop' },
-    { href: '/newsletter', label: 'Lookbook' },
   ];
 
   return (
