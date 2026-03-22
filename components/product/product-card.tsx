@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { FavoriteIcon } from '@/components/icons/cart-icon';
 import { Button } from '@/components/ui/button';
+import { PriceDisplay } from '@/components/currency/price-display';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -12,6 +13,7 @@ interface ProductCardProps {
   price: number;
   image: string;
   category?: string;
+  currency?: string;
   onAddToCart?: (id: string) => void;
   onFavorite?: (id: string) => void;
   isFavorited?: boolean;
@@ -24,6 +26,7 @@ export function ProductCard({
   price,
   image,
   category,
+  currency = 'USD',
   onAddToCart,
   onFavorite,
   isFavorited = false,
@@ -93,9 +96,11 @@ export function ProductCard({
         <h3 className="font-display font-bold uppercase text-sm leading-tight hover:opacity-75 transition-opacity cursor-pointer">
           {name}
         </h3>
-        <p className="font-display font-bold uppercase text-lg text-foreground" aria-label={`Price: ${price.toFixed(2)} dollars`}>
-          ${price.toFixed(2)}
-        </p>
+        <PriceDisplay
+          amount={price}
+          baseCurrency={currency}
+          className="font-display font-bold uppercase text-lg text-foreground"
+        />
       </div>
     </article>
   );
