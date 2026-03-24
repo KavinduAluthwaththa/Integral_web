@@ -1,60 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Navbar } from '@/components/navigation/navbar';
 import { useCart } from '@/lib/cart-context';
+import { useAdminGuard } from '@/hooks/admin/use-admin-guard';
 import {
   getSalesOverview,
   getHotProducts,
   getInventoryLevels,
+  getRecommendationOverview,
   getUserRetention,
   getTrafficSources,
   SalesOverview,
   HotProduct,
   InventoryLevel,
+  RecommendationOverview,
   UserRetention,
   TrafficSource,
 } from '@/lib/admin-analytics';
+import { getInventoryStatusColor } from '@/lib/inventory/stock-ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Eye, Package, Users, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Circle as XCircle, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Eye, Users, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Circle as XCircle, Activity, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const { loading: authLoading } = useAuth();
   const { itemCount } = useCart();
+  const { isAdmin, checkingAdmin } = useAdminGuard();
 
   const [salesOverview, setSalesOverview] = useState<SalesOverview | null>(null);
   const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
   const [inventoryLevels, setInventoryLevels] = useState<InventoryLevel[]>([]);
+  const [recommendationOverview, setRecommendationOverview] = useState<RecommendationOverview | null>(null);
   const [userRetention, setUserRetention] = useState<UserRetention | null>(null);
   const [trafficSources, setTrafficSources] = useState<TrafficSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(30);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user, dateRange]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     const startDate = new Date(Date.now() - dateRange * 24 * 60 * 60 * 1000);
     const endDate = new Date();
 
-    const [sales, products, inventory, retention, traffic] = await Promise.all([
+    const [sales, products, inventory, recommendations, retention, traffic] = await Promise.all([
       getSalesOverview(startDate, endDate),
       getHotProducts(startDate, endDate, 5),
       getInventoryLevels(),
+      getRecommendationOverview(startDate, endDate),
       getUserRetention(startDate, endDate),
       getTrafficSources(startDate, endDate),
     ]);
@@ -62,10 +56,17 @@ export default function AdminDashboard() {
     setSalesOverview(sales);
     setHotProducts(products);
     setInventoryLevels(inventory);
+    setRecommendationOverview(recommendations);
     setUserRetention(retention);
     setTrafficSources(traffic);
     setLoading(false);
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      void loadDashboardData();
+    }
+  }, [isAdmin, loadDashboardData]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -73,19 +74,6 @@ export default function AdminDashboard() {
 
   const formatPercentage = (value: number) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
-  };
-
-  const getStockStatusColor = (status: string) => {
-    switch (status) {
-      case 'in_stock':
-        return 'text-green-600';
-      case 'low_stock':
-        return 'text-orange-600';
-      case 'out_of_stock':
-        return 'text-red-600';
-      default:
-        return 'text-muted-foreground';
-    }
   };
 
   const getStockStatusIcon = (status: string) => {
@@ -114,11 +102,11 @@ export default function AdminDashboard() {
     return icons[source] || '🌐';
   };
 
-  if (authLoading || loading) {
+  if (authLoading || checkingAdmin || loading) {
     return (
       <>
         <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
-        <main className="min-h-screen bg-background py-5xl">
+        <main className="min-h-screen bg-background pt-4xl pb-4xl">
           <div className="max-w-7xl mx-auto px-xl">
             <div className="flex items-center justify-center h-64">
               <div className="text-muted-foreground">Loading admin dashboard...</div>
@@ -129,46 +117,50 @@ export default function AdminDashboard() {
     );
   }
 
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <>
       <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
-      <main className="min-h-screen bg-background py-5xl">
+      <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h1 className="text-3xl font-light tracking-wide">Admin Dashboard</h1>
+              <h1 className="text-2xl font-light tracking-wide sm:text-3xl">Admin Dashboard</h1>
               <p className="text-muted-foreground mt-2">
                 Complete overview of your e-commerce operations
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:flex">
               <button
                 onClick={() => setDateRange(7)}
-                className={`px-4 py-2 text-sm border transition-colors ${
+                className={`h-10 px-2 text-[11px] uppercase tracking-[0.18em] border-2 transition-colors sm:px-4 sm:text-xs sm:tracking-[0.2em] ${
                   dateRange === 7
-                    ? 'bg-foreground text-background'
-                    : 'border-foreground/20 hover:border-foreground'
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-foreground text-foreground hover:bg-foreground hover:text-background'
                 }`}
               >
                 7 Days
               </button>
               <button
                 onClick={() => setDateRange(30)}
-                className={`px-4 py-2 text-sm border transition-colors ${
+                className={`h-10 px-2 text-[11px] uppercase tracking-[0.18em] border-2 transition-colors sm:px-4 sm:text-xs sm:tracking-[0.2em] ${
                   dateRange === 30
-                    ? 'bg-foreground text-background'
-                    : 'border-foreground/20 hover:border-foreground'
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-foreground text-foreground hover:bg-foreground hover:text-background'
                 }`}
               >
                 30 Days
               </button>
               <button
                 onClick={() => setDateRange(90)}
-                className={`px-4 py-2 text-sm border transition-colors ${
+                className={`h-10 px-2 text-[11px] uppercase tracking-[0.18em] border-2 transition-colors sm:px-4 sm:text-xs sm:tracking-[0.2em] ${
                   dateRange === 90
-                    ? 'bg-foreground text-background'
-                    : 'border-foreground/20 hover:border-foreground'
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-foreground text-foreground hover:bg-foreground hover:text-background'
                 }`}
               >
                 90 Days
@@ -176,17 +168,43 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Link href="/admin/products" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Catalog</p>
+              <h2 className="mt-2 text-xl font-light tracking-wide">Manage Products</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Create products, edit merchandising details, and update variant stock.</p>
+            </Link>
+            <Link href="/admin/orders" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Fulfillment</p>
+              <h2 className="mt-2 text-xl font-light tracking-wide">Manage Orders</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Review live orders, shipping details, and fulfillment statuses.</p>
+            </Link>
+            <Link href="/admin/returns" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Aftercare</p>
+              <h2 className="mt-2 text-xl font-light tracking-wide">Manage Returns</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Approve, reject, and process return workflows.</p>
+            </Link>
+            <Link href="/admin/payments" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background flex items-start gap-3">
+              <ShieldAlert className="h-5 w-5 mt-0.5" />
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Payments</p>
+                <h2 className="mt-2 text-xl font-light tracking-wide">Webhook Health</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Review PayHere webhook failures, events, and alerts.</p>
+              </div>
+            </Link>
+          </section>
+
           {/* Sales Overview */}
           <section>
             <h2 className="text-xl font-light tracking-wide mb-4">Sales Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-light tracking-tight">
                     {formatCurrency(salesOverview?.totalRevenue || 0)}
                   </div>
                   <div className="flex items-center gap-1 text-xs mt-1">
@@ -209,13 +227,13 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                  <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Total Orders</CardTitle>
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{salesOverview?.totalOrders || 0}</div>
+                  <div className="text-3xl font-light tracking-tight">{salesOverview?.totalOrders || 0}</div>
                   <div className="flex items-center gap-1 text-xs mt-1">
                     {salesOverview && salesOverview.ordersGrowth >= 0 ? (
                       <TrendingUp className="h-3 w-3 text-green-600" />
@@ -236,26 +254,26 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
+                  <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Avg Order Value</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-light tracking-tight">
                     {formatCurrency(salesOverview?.avgOrderValue || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Per transaction</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                  <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Conversion Rate</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-light tracking-tight">
                     {salesOverview?.conversionRate.toFixed(2) || 0}%
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Sessions to orders</p>
@@ -264,9 +282,9 @@ export default function AdminDashboard() {
             </div>
 
             {salesOverview && salesOverview.revenueByDay.length > 0 && (
-              <Card className="mt-4">
+              <Card className="mt-4 rounded-none border-2 border-foreground shadow-none">
                 <CardHeader>
-                  <CardTitle>Revenue Trend</CardTitle>
+                  <CardTitle className="text-base font-light tracking-wide">Revenue Trend</CardTitle>
                   <CardDescription>Daily revenue and order breakdown</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -278,7 +296,7 @@ export default function AdminDashboard() {
                       >
                         <span className="text-sm text-muted-foreground">{day.date}</span>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium">{formatCurrency(day.revenue)}</span>
+                          <span className="text-sm font-light tracking-wide">{formatCurrency(day.revenue)}</span>
                           <span className="text-xs text-muted-foreground">
                             {day.orders} orders
                           </span>
@@ -295,9 +313,9 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Hot Products</h2>
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader>
-                  <CardTitle>Top Performing Products</CardTitle>
+                  <CardTitle className="text-base font-light tracking-wide">Top Performing Products</CardTitle>
                   <CardDescription>Based on revenue and sales volume</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -310,7 +328,7 @@ export default function AdminDashboard() {
                           key={product.id}
                           className="flex items-center gap-4 pb-4 border-b last:border-0"
                         >
-                          <div className="flex items-center justify-center w-8 h-8 bg-muted rounded-full text-sm font-medium shrink-0">
+                          <div className="flex items-center justify-center w-8 h-8 border-2 border-foreground text-sm font-light shrink-0">
                             #{index + 1}
                           </div>
                           <div className="relative w-16 h-16 bg-muted rounded shrink-0">
@@ -324,7 +342,7 @@ export default function AdminDashboard() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{product.name}</p>
+                            <p className="text-sm font-light tracking-wide truncate">{product.name}</p>
                             <p className="text-xs text-muted-foreground">{product.sku}</p>
                             <div className="flex items-center gap-3 mt-1 text-xs">
                               <span className="flex items-center gap-1">
@@ -338,7 +356,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-bold">{formatCurrency(product.revenue)}</p>
+                            <p className="text-sm font-light tracking-wide">{formatCurrency(product.revenue)}</p>
                             <p className="text-xs text-muted-foreground">
                               {product.conversionRate.toFixed(1)}% conv
                             </p>
@@ -353,9 +371,9 @@ export default function AdminDashboard() {
 
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Inventory Levels</h2>
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader>
-                  <CardTitle>Stock Status</CardTitle>
+                  <CardTitle className="text-base font-light tracking-wide">Stock Status</CardTitle>
                   <CardDescription>Current inventory across all variants</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -379,7 +397,7 @@ export default function AdminDashboard() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{item.productName}</p>
+                            <p className="text-sm font-light tracking-wide truncate">{item.productName}</p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>Size {item.size}</span>
                               <span>•</span>
@@ -388,10 +406,10 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <div className="text-right">
-                              <p className="text-sm font-medium">{item.availableStock}</p>
+                              <p className="text-sm font-light tracking-wide">{item.availableStock}</p>
                               <p className="text-xs text-muted-foreground">available</p>
                             </div>
-                            <div className={getStockStatusColor(item.status)}>
+                            <div className={getInventoryStatusColor(item.status)}>
                               {getStockStatusIcon(item.status)}
                             </div>
                           </div>
@@ -408,20 +426,20 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">User Retention</h2>
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader>
-                  <CardTitle>User Activity</CardTitle>
+                  <CardTitle className="text-base font-light tracking-wide">User Activity</CardTitle>
                   <CardDescription>New vs returning user breakdown</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Total Users</p>
-                      <p className="text-2xl font-bold">{userRetention?.totalUsers || 0}</p>
+                      <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Total Users</p>
+                      <p className="text-3xl font-light tracking-tight">{userRetention?.totalUsers || 0}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Retention Rate</p>
-                      <p className="text-2xl font-bold">
+                      <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Retention Rate</p>
+                      <p className="text-3xl font-light tracking-tight">
                         {userRetention?.retentionRate.toFixed(1) || 0}%
                       </p>
                     </div>
@@ -433,14 +451,14 @@ export default function AdminDashboard() {
                         <Users className="h-4 w-4 text-green-600" />
                         <span className="text-sm">New Users</span>
                       </div>
-                      <span className="text-xl font-semibold">{userRetention?.newUsers || 0}</span>
+                      <span className="text-2xl font-light tracking-tight">{userRetention?.newUsers || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-blue-600" />
                         <span className="text-sm">Returning Users</span>
                       </div>
-                      <span className="text-xl font-semibold">
+                      <span className="text-2xl font-light tracking-tight">
                         {userRetention?.returningUsers || 0}
                       </span>
                     </div>
@@ -449,7 +467,7 @@ export default function AdminDashboard() {
                         <Activity className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">Avg Sessions/User</span>
                       </div>
-                      <span className="text-xl font-semibold">
+                      <span className="text-2xl font-light tracking-tight">
                         {userRetention?.avgSessionsPerUser.toFixed(1) || 0}
                       </span>
                     </div>
@@ -457,7 +475,7 @@ export default function AdminDashboard() {
 
                   {userRetention && userRetention.usersByDay.length > 0 && (
                     <div className="pt-4 border-t">
-                      <h4 className="text-sm font-medium mb-2">Daily Breakdown</h4>
+                      <h4 className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">Daily Breakdown</h4>
                       <div className="space-y-2 max-h-32 overflow-y-auto">
                         {userRetention.usersByDay.slice(-7).map((day, index) => (
                           <div key={index} className="flex justify-between text-xs">
@@ -477,9 +495,9 @@ export default function AdminDashboard() {
 
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Traffic Sources</h2>
-              <Card>
+              <Card className="rounded-none border-2 border-foreground shadow-none">
                 <CardHeader>
-                  <CardTitle>Visitor Origins</CardTitle>
+                  <CardTitle className="text-base font-light tracking-wide">Visitor Origins</CardTitle>
                   <CardDescription>Where your traffic comes from</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -489,15 +507,16 @@ export default function AdminDashboard() {
                     ) : (
                       trafficSources.map((source, index) => (
                         <div key={index} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-2">
                               <span>{getSourceIcon(source.source)}</span>
-                              <span className="capitalize font-medium">{source.source}</span>
+                              <span className="capitalize font-light tracking-wide">{source.source}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground sm:flex sm:items-center sm:gap-3">
                               <span>{source.sessions} sessions</span>
-                              <span>•</span>
                               <span>{source.users} users</span>
+                              <span>{source.orders} orders</span>
+                              <span>{formatCurrency(source.revenue)}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -511,6 +530,9 @@ export default function AdminDashboard() {
                               {source.percentage.toFixed(1)}%
                             </span>
                           </div>
+                          <p className="text-xs text-muted-foreground">
+                            Conversion {source.conversionRate.toFixed(1)}%
+                          </p>
                         </div>
                       ))
                     )}
@@ -519,6 +541,43 @@ export default function AdminDashboard() {
               </Card>
             </section>
           </div>
+
+          <section>
+            <h2 className="text-xl font-light tracking-wide mb-4">Recommendation Performance</h2>
+            <Card className="rounded-none border-2 border-foreground shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base font-light tracking-wide">Attributed Sales</CardTitle>
+                <CardDescription>How recommendation clicks translate into carts and orders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                  <div className="space-y-1">
+                    <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Clicks</p>
+                    <p className="text-3xl font-light tracking-tight">{recommendationOverview?.clickCount || 0}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Add To Cart</p>
+                    <p className="text-3xl font-light tracking-tight">{recommendationOverview?.addToCartCount || 0}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Orders</p>
+                    <p className="text-3xl font-light tracking-tight">{recommendationOverview?.conversionCount || 0}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Click To Cart</p>
+                    <p className="text-3xl font-light tracking-tight">{(recommendationOverview?.clickToCartRate ?? 0).toFixed(1)}%</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Revenue</p>
+                    <p className="text-3xl font-light tracking-tight">{formatCurrency(recommendationOverview?.attributedRevenue || 0)}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Click to order conversion: {(recommendationOverview?.clickToOrderRate ?? 0).toFixed(1)}%
+                </p>
+              </CardContent>
+            </Card>
+          </section>
         </div>
       </main>
     </>
