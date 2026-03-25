@@ -129,22 +129,30 @@ export function PaymentForm(props: PaymentFormProps) {
   return (
     <div className="space-y-xl">
       <div className="space-y-lg">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-light tracking-wider">Payment Information</h2>
-          <div className="flex items-center gap-xs text-muted-foreground">
+        <div className="flex flex-col gap-md border-b border-foreground/10 pb-lg md:flex-row md:items-end md:justify-between">
+          <div className="space-y-sm">
+            <p className="font-display text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Step Two
+            </p>
+            <h2 className="text-2xl font-light tracking-wide">Payment Information</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Complete your order securely with card details. This is a demo payment flow for the storefront.
+            </p>
+          </div>
+          <div className="flex items-center gap-xs text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             <Lock size={14} strokeWidth={1.5} />
-            <span className="text-xs">Secure Payment</span>
+            <span>Secure Payment</span>
           </div>
         </div>
 
-        <div className="bg-neutral-50 border border-foreground/10 p-lg rounded-sm space-y-sm">
+        <div className="space-y-sm border-2 border-foreground px-lg py-md">
           <div className="flex items-center gap-sm text-muted-foreground">
             <CreditCard size={16} strokeWidth={1.5} />
-            <p className="text-xs">
+            <p className="text-xs uppercase tracking-[0.18em]">
               Test mode: Use card number 4242 4242 4242 4242
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
             Any future expiry date and any 3-digit CVV
           </p>
         </div>

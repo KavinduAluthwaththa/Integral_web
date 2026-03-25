@@ -94,7 +94,15 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
   return (
     <form onSubmit={handleSubmit} className="space-y-xl">
       <div className="space-y-lg">
-        <h2 className="text-xl font-light tracking-wider">Shipping Information</h2>
+        <div className="space-y-sm border-b border-foreground/10 pb-lg">
+          <p className="font-display text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+            Step One
+          </p>
+          <h2 className="text-2xl font-light tracking-wide">Shipping Information</h2>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Enter the delivery details for this order. We&apos;ll use this information for shipping updates and confirmation.
+          </p>
+        </div>
 
         <div className="space-y-lg">
           <div className="space-y-sm">
