@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
@@ -12,8 +12,8 @@ interface Order {
   order_number: string;
   status: string;
   total: number;
-  payment_status: string;
   created_at: string;
+  payment_id?: string | null;
   order_items: {
     quantity: number;
     price: number;
@@ -29,24 +29,14 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      loadOrders();
-    }
-  }, [user, authLoading, router]);
-
-  const loadOrders = async () => {
-    if (!user) return;
+  const loadOrders = useCallback(async () => {
+    if (!user?.id) return;
 
     const { data, error } = await supabase
       .from('orders')
       .select(`
         *,
+        payment_id,
         order_items (
           quantity,
           price,
@@ -61,7 +51,18 @@ export default function OrdersPage() {
     }
 
     setLoading(false);
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      void loadOrders();
+    }
+  }, [user, authLoading, router, loadOrders]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -133,6 +134,9 @@ export default function OrdersPage() {
                     <p className={`text-sm capitalize ${getStatusColor(order.status)}`}>
                       {order.status}
                     </p>
+                    {order.payment_id && (
+                      <p className="text-[11px] text-muted-foreground">Txn: {order.payment_id}</p>
+                    )}
                   </div>
                 </div>
 

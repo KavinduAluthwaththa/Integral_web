@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/navigation/navbar';
 import { useCart } from '@/lib/cart-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/lib/supabase';
 import {
   sendOrderConfirmationEmail,
   sendShipmentUpdateEmail,
@@ -14,27 +15,81 @@ import {
 } from '@/lib/email-service';
 import { Mail, Package, RotateCcw, Bell, CircleCheck as CheckCircle2, CircleAlert as AlertCircle } from 'lucide-react';
 
+interface DemoProduct {
+  name: string;
+  sku: string;
+  price: number;
+  size: string;
+}
+
 export default function EmailDemoPage() {
   const { itemCount } = useCart();
   const [email, setEmail] = useState('test@example.com');
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [demoProducts, setDemoProducts] = useState<DemoProduct[]>([]);
+
+  useEffect(() => {
+    const loadDemoProducts = async () => {
+      const { data } = await supabase
+        .from('products')
+        .select('name, sku, price, product_variants(size)')
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      if (!data) {
+        setDemoProducts([]);
+        return;
+      }
+
+      const mapped = (data as any[]).map((product) => {
+        const variants = Array.isArray(product.product_variants) ? product.product_variants : [];
+        const firstVariant = variants[0];
+
+        return {
+          name: String(product.name || ''),
+          sku: String(product.sku || ''),
+          price: Number(product.price || 0),
+          size: String(firstVariant?.size || 'One Size'),
+        };
+      }).filter((product) => product.name && product.sku && product.price > 0);
+
+      setDemoProducts(mapped);
+    };
+
+    void loadDemoProducts();
+  }, []);
 
   const handleSendOrderConfirmation = async () => {
     setLoading('order');
+    if (demoProducts.length === 0) {
+      setResults((prev) => ({
+        ...prev,
+        order: {
+          success: false,
+          message: 'No Supabase products available for email preview.',
+        },
+      }));
+      setLoading(null);
+      return;
+    }
+
+    const primary = demoProducts[0];
+    const secondary = demoProducts[1] || demoProducts[0];
+
     const result = await sendOrderConfirmationEmail({
       orderNumber: 'ORD-2024-001',
       customerName: 'John Doe',
       customerEmail: email,
       orderDate: new Date().toLocaleDateString(),
       items: [
-        { name: 'Classic White T-Shirt', sku: 'TSH-001', size: 'M', quantity: 2, price: 29.99 },
-        { name: 'Slim Fit Jeans', sku: 'JNS-002', size: '32', quantity: 1, price: 79.99 },
+        { name: primary.name, sku: primary.sku, size: primary.size, quantity: 2, price: primary.price },
+        { name: secondary.name, sku: secondary.sku, size: secondary.size, quantity: 1, price: secondary.price },
       ],
-      subtotal: 139.97,
+      subtotal: (primary.price * 2) + secondary.price,
       shipping: 10.00,
       tax: 12.00,
-      total: 161.97,
+      total: (primary.price * 2) + secondary.price + 10 + 12,
       shippingAddress: {
         street: '123 Main St',
         city: 'New York',
@@ -84,6 +139,20 @@ export default function EmailDemoPage() {
 
   const handleSendReturnConfirmation = async () => {
     setLoading('return');
+    if (demoProducts.length === 0) {
+      setResults((prev) => ({
+        ...prev,
+        return: {
+          success: false,
+          message: 'No Supabase products available for return preview.',
+        },
+      }));
+      setLoading(null);
+      return;
+    }
+
+    const primary = demoProducts[0];
+
     const result = await sendReturnConfirmationEmail({
       returnNumber: 'RET-2024-001',
       orderNumber: 'ORD-2024-001',
@@ -91,9 +160,9 @@ export default function EmailDemoPage() {
       customerEmail: email,
       returnDate: new Date().toLocaleDateString(),
       items: [
-        { name: 'Classic White T-Shirt', sku: 'TSH-001', size: 'M', quantity: 1, refundAmount: 29.99 },
+        { name: primary.name, sku: primary.sku, size: primary.size, quantity: 1, refundAmount: primary.price },
       ],
-      totalRefund: 29.99,
+      totalRefund: primary.price,
       refundMethod: 'Original Payment Method',
       processingTime: '5-7 business days',
     });
@@ -195,6 +264,11 @@ export default function EmailDemoPage() {
               placeholder="Enter email address"
               className="max-w-md"
             />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {demoProducts.length > 0
+                ? `Using ${demoProducts.length} product${demoProducts.length === 1 ? '' : 's'} from Supabase for previews.`
+                : 'No products found in Supabase yet. Add products to preview product-based emails.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

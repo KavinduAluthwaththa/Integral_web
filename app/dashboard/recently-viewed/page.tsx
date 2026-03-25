@@ -1,32 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
-import { supabase } from '@/lib/supabase';
 import { Eye } from 'lucide-react';
-
-interface RecentlyViewed {
-  id: string;
-  product_id: string;
-  viewed_at: string;
-  products: {
-    id: string;
-    name: string;
-    sku: string;
-    base_price: number;
-    images: string[];
-  };
-}
+import { getRecentlyViewedProducts, RecentlyViewedProduct } from '@/lib/recommendations';
 
 export default function RecentlyViewedPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewed[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedProduct[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const loadRecentlyViewed = useCallback(async () => {
+    if (!user?.id) return;
+
+    const data = await getRecentlyViewedProducts({ userId: user.id, limit: 50 });
+    setRecentlyViewed(data);
+
+    setLoading(false);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -35,35 +31,9 @@ export default function RecentlyViewedPage() {
     }
 
     if (user) {
-      loadRecentlyViewed();
+      void loadRecentlyViewed();
     }
-  }, [user, authLoading, router]);
-
-  const loadRecentlyViewed = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('recently_viewed')
-      .select(`
-        *,
-        products (
-          id,
-          name,
-          sku,
-          base_price,
-          images
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('viewed_at', { ascending: false })
-      .limit(50);
-
-    if (!error && data) {
-      setRecentlyViewed(data);
-    }
-
-    setLoading(false);
-  };
+  }, [user, authLoading, router, loadRecentlyViewed]);
 
   if (authLoading || loading) {
     return (
@@ -81,7 +51,7 @@ export default function RecentlyViewedPage() {
         <div className="space-y-sm">
           <h1 className="text-2xl font-light tracking-wide">Recently Viewed</h1>
           <p className="text-muted-foreground">
-            Products you've recently looked at.
+            Products you&apos;ve recently looked at.
           </p>
         </div>
 
@@ -98,12 +68,12 @@ export default function RecentlyViewedPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-lg">
             {recentlyViewed.map((item) => (
-              <Link key={item.id} href={`/product/${item.products.sku}`}>
+              <Link key={`${item.id}-${item.viewed_at}`} href={`/product/${item.sku}`}>
                 <div className="space-y-md group">
                   <div className="relative aspect-[3/4] bg-neutral-100 overflow-hidden">
                     <Image
-                      src={item.products.images[0]}
-                      alt={item.products.name}
+                      src={item.images[0]}
+                      alt={item.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -111,10 +81,10 @@ export default function RecentlyViewedPage() {
 
                   <div className="space-y-xs">
                     <p className="text-sm tracking-wide group-hover:underline">
-                      {item.products.name}
+                      {item.name}
                     </p>
                     <p className="text-sm font-light">
-                      ${item.products.base_price.toFixed(2)}
+                      ${item.price.toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(item.viewed_at).toLocaleDateString()}
