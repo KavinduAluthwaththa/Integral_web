@@ -37,11 +37,13 @@ function getBucketPathsFromImages(images: unknown): string[] {
   );
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
+
+  const { id } = await params;
 
   const { client } = auth;
   const { data, error } = await client
@@ -50,7 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       *,
       product_variants (*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (error) {
@@ -64,11 +66,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ data });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
+
+  const { id } = await params;
 
   const { client } = auth;
   const payload = normalizeProductPayload(await req.json());
@@ -81,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: existingProduct, error: existingProductError } = await client
     .from('products')
     .select('images')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (existingProductError) {
@@ -95,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: existingVariants, error: existingVariantsError } = await client
     .from('product_variants')
     .select('id')
-    .eq('product_id', params.id);
+    .eq('product_id', id);
 
   if (existingVariantsError) {
     return NextResponse.json({ error: existingVariantsError.message }, { status: 500 });
@@ -113,7 +117,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       is_featured: payload.is_featured,
       images: payload.images,
     })
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (productError) {
     return NextResponse.json({ error: productError.message }, { status: 500 });
@@ -122,7 +126,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const keepVariantIds = payload.variants.map((variant) => variant.id).filter(Boolean) as string[];
   const variantRows = payload.variants.map((variant) => ({
     id: variant.id,
-    product_id: params.id,
+    product_id: id,
     size: variant.size,
     stock: variant.stock,
   }));
@@ -170,7 +174,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       *,
       product_variants (*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error) {
@@ -180,17 +184,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ data });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
+  const { id } = await params;
+
   const { client } = auth;
   const { data: product, error: productFetchError } = await client
     .from('products')
     .select('images')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (productFetchError) {
@@ -213,7 +219,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
   }
 
-  const { error } = await client.from('products').delete().eq('id', params.id);
+  const { error } = await client.from('products').delete().eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/server-admin-auth';
 import { buildOrderUpdatePatch } from '@/lib/admin';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
+
+  const { id } = await params;
 
   const { client } = auth;
   const body = await req.json();
@@ -14,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: existingOrder, error: existingOrderError } = await client
     .from('orders')
     .select('status, fulfilled_at, shipped_at, delivered_at, cancelled_at')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (existingOrderError) {
@@ -40,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await client
     .from('orders')
     .update(updatePatch)
-    .eq('id', params.id)
+    .eq('id', id)
     .select(`
       *,
       order_items (

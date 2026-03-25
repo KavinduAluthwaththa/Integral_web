@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/server-admin-auth';
 
 interface RouteParams {
-  params: { transactionId: string };
+  params: Promise<{ transactionId: string }>;
 }
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
@@ -12,6 +12,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const { client } = auth;
+  const { transactionId } = await params;
 
   const { error } = await client
     .from('refund_transactions')
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       status: 'completed',
       processed_at: new Date().toISOString(),
     })
-    .eq('id', params.transactionId);
+    .eq('id', transactionId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

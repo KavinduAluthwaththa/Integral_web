@@ -101,8 +101,15 @@ npm run start        # run production build
 npm run lint         # lint checks
 npm run typecheck    # TypeScript checks
 npm run test         # run tests
+npm run test:coverage # run tests with coverage thresholds
+npm run test:security # run security-focused unit tests
+npm run test:e2e     # run Playwright end-to-end tests
+npm run test:e2e:security # run security-focused E2E tests
 npm run check        # typecheck + test
 npm run check:strict # lint + typecheck + test
+npm run check:strict:e2e # lint + typecheck + unit tests + e2e tests
+npm run check:strict:coverage:e2e # lint + typecheck + coverage + e2e tests
+npm run check:security # lint + typecheck + security tests + security e2e + dependency audit
 ```
 
 ## Quality and Validation
@@ -111,6 +118,13 @@ Run the strict pipeline before merge:
 
 ```bash
 npm run check:strict
+```
+
+Run full validation including browser end-to-end coverage:
+
+```bash
+npx playwright install chromium
+npm run check:strict:e2e
 ```
 
 ## Design System Docs

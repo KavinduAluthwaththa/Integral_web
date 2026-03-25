@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/server-admin-auth';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 type ReturnAction = 'approve' | 'reject' | 'update_status' | 'create_refund_transaction';
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const { client, userId } = auth;
-  const returnId = params.id;
+  const { id: returnId } = await params;
 
   const body = await req.json();
   const action = body?.action as ReturnAction | undefined;

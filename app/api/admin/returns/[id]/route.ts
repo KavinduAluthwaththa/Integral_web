@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/server-admin-auth';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 
   const { client } = auth;
-  const returnId = params.id;
+  const { id: returnId } = await params;
 
   const [{ data: returnRequest, error: returnError }, { data: items, error: itemsError }, { data: transactions, error: txError }] = await Promise.all([
     client.from('return_requests').select('*').eq('id', returnId).maybeSingle(),

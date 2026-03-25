@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/navigation/navbar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const params = useSearchParams();
   const orderId = params.get('order');
   const [status, setStatus] = useState<'pending' | 'paid' | 'failed' | 'unknown'>('unknown');
@@ -82,5 +82,13 @@ export default function CheckoutSuccessPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
