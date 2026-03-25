@@ -53,6 +53,15 @@ export interface TrafficSource {
   percentage: number;
 }
 
+export interface RecommendationOverview {
+  clickCount: number;
+  addToCartCount: number;
+  conversionCount: number;
+  clickToCartRate: number;
+  clickToOrderRate: number;
+  attributedRevenue: number;
+}
+
 export async function getSalesOverview(startDate?: Date, endDate?: Date): Promise<SalesOverview> {
   const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const end = endDate || new Date();
@@ -185,29 +194,34 @@ export async function getHotProducts(startDate?: Date, endDate?: Date, limit = 1
 }
 
 export async function getInventoryLevels(): Promise<InventoryLevel[]> {
-  const { data: variants } = await supabase
-    .from('product_variants')
-    .select(`
-      id,
-      size,
-      products (
+  const [{ data: variants }, { data: inventoryRows }] = await Promise.all([
+    supabase
+      .from('product_variants')
+      .select(`
         id,
-        name,
-        sku,
-        images
-      )
-    `);
+        size,
+        products (
+          id,
+          name,
+          sku,
+          images
+        )
+      `),
+    supabase
+      .from('inventory')
+      .select('variant_id, current_stock, reserved_stock, available_stock'),
+  ]);
 
-  if (!variants) return [];
+  if (!variants || !inventoryRows) return [];
+
+  const inventoryByVariantId = new Map(
+    inventoryRows.map((row: any) => [row.variant_id, row])
+  );
 
   const inventoryLevels: InventoryLevel[] = [];
 
   for (const variant of variants) {
-    const { data: inventory } = await supabase
-      .from('inventory')
-      .select('current_stock, reserved_stock, available_stock')
-      .eq('variant_id', variant.id)
-      .maybeSingle();
+    const inventory = inventoryByVariantId.get(variant.id);
 
     if (inventory && variant.products) {
       const product = variant.products as any;
@@ -303,7 +317,7 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
 
   const { data: orders } = await supabase
     .from('orders')
-    .select('total, status')
+    .select('session_id, total, status')
     .neq('status', 'cancelled')
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
@@ -320,6 +334,7 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
     orders: number;
     revenue: number
   }> = {};
+  const sourceBySessionId = new Map<string, string>();
 
   trafficData?.forEach((traffic) => {
     if (!sourceStats[traffic.source]) {
@@ -331,15 +346,24 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
       };
     }
     sourceStats[traffic.source].sessionIds.add(traffic.session_id);
+    sourceBySessionId.set(traffic.session_id, traffic.source);
   });
 
   sessions?.forEach((session) => {
-    const sourceEntry = Object.values(sourceStats).find(stat =>
-      stat.sessionIds.has(session.session_id)
-    );
-    if (sourceEntry && session.user_id) {
-      sourceEntry.userIds.add(session.user_id);
+    const source = sourceBySessionId.get(session.session_id);
+    if (!source) return;
+
+    if (session.user_id) {
+      sourceStats[source].userIds.add(session.user_id);
     }
+  });
+
+  orders?.forEach((order) => {
+    const source = sourceBySessionId.get(order.session_id);
+    if (!source) return;
+
+    sourceStats[source].orders += 1;
+    sourceStats[source].revenue += Number(order.total || 0);
   });
 
   const totalSessions = trafficData?.length || 0;
@@ -362,4 +386,46 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
   });
 
   return trafficSources.sort((a, b) => b.sessions - a.sessions);
+}
+
+export async function getRecommendationOverview(startDate?: Date, endDate?: Date): Promise<RecommendationOverview> {
+  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const end = endDate || new Date();
+
+  const emptyOverview: RecommendationOverview = {
+    clickCount: 0,
+    addToCartCount: 0,
+    conversionCount: 0,
+    clickToCartRate: 0,
+    clickToOrderRate: 0,
+    attributedRevenue: 0,
+  };
+
+  const { data, error } = await supabase
+    .from('recommendation_events')
+    .select('added_to_cart_at, converted_order_id, attributed_revenue')
+    .gte('clicked_at', start.toISOString())
+    .lte('clicked_at', end.toISOString());
+
+  if (error || !data) {
+    console.error('Error fetching recommendation overview:', error);
+    return emptyOverview;
+  }
+
+  const clickCount = data.length;
+  const addToCartCount = data.filter((event) => Boolean(event.added_to_cart_at)).length;
+  const conversionCount = data.filter((event) => Boolean(event.converted_order_id)).length;
+  const attributedRevenue = data.reduce(
+    (sum, event) => sum + Number(event.attributed_revenue || 0),
+    0
+  );
+
+  return {
+    clickCount,
+    addToCartCount,
+    conversionCount,
+    clickToCartRate: clickCount > 0 ? (addToCartCount / clickCount) * 100 : 0,
+    clickToOrderRate: clickCount > 0 ? (conversionCount / clickCount) * 100 : 0,
+    attributedRevenue: Math.round(attributedRevenue * 100) / 100,
+  };
 }

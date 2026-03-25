@@ -1,45 +1,69 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Heart, CircleAlert as AlertCircle } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { supabase, ProductWithVariants } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Navbar } from '@/components/navigation/navbar';
+import { Header } from '@/components/navigation/header';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { ImageGallery } from '@/components/product/image-gallery';
+import { ProductRecommendations } from '@/components/product/product-recommendations';
+import { PriceDisplay } from '@/components/currency/price-display';
 import { useCart } from '@/lib/cart-context';
 import { useToast } from '@/hooks/use-toast';
-import { getStockInfo, getStockStatusText, getStockStatusColor, StockInfo } from '@/lib/inventory';
+import { getStockInfo, StockInfo } from '@/lib/inventory';
+import { getStockStatusText, getStockStatusColor } from '@/lib/inventory/stock-ui';
 import { trackProductView, trackSizeSelect, trackAddToCart } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth-context';
+import {
+  getProductRecommendations,
+  getRecentlyViewedProducts,
+  RecommendedProduct,
+  recordRecentlyViewedProduct,
+  trackRecommendationAddToCart,
+  trackRecommendationClick,
+  RecentlyViewedProduct,
+} from '@/lib/recommendations';
 
 export default function ProductPage() {
   const params = useParams();
+  const router = useRouter();
   const sku = params.sku as string;
   const { addItem, itemCount } = useCart();
   const { toast } = useToast();
   const { user } = useAuth();
 
   const [product, setProduct] = useState<ProductWithVariants | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<ProductWithVariants[]>([]);
-  const [recentlyViewed, setRecentlyViewed] = useState<ProductWithVariants[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<RecommendedProduct[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedProduct[]>([]);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [variantStockInfo, setVariantStockInfo] = useState<Record<string, StockInfo>>({});
+  const [stockRealtimeStatus, setStockRealtimeStatus] = useState<'offline' | 'connecting' | 'live' | 'error'>('offline');
 
-  useEffect(() => {
-    if (sku) {
-      loadProduct();
+  const refreshVariantStockInfo = useCallback(async (variants: ProductWithVariants['product_variants']) => {
+    if (!variants?.length) {
+      setVariantStockInfo({});
+      return {} as Record<string, StockInfo>;
     }
-  }, [sku]);
 
-  const loadProduct = async () => {
+    const stockEntries = await Promise.all(
+      variants.map(async (variant) => [variant.id, await getStockInfo(variant.id)] as const)
+    );
+
+    const nextStockInfo = Object.fromEntries(stockEntries) as Record<string, StockInfo>;
+    setVariantStockInfo(nextStockInfo);
+    return nextStockInfo;
+  }, []);
+
+  const loadProduct = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -58,16 +82,10 @@ export default function ProductPage() {
       setProduct(productData as ProductWithVariants);
 
       await trackProductView(productData.id, user?.id);
+      await recordRecentlyViewedProduct(productData.id, user?.id);
 
       if (productData.product_variants && productData.product_variants.length > 0) {
-        const stockInfoMap: Record<string, StockInfo> = {};
-
-        for (const variant of productData.product_variants) {
-          const stockInfo = await getStockInfo(variant.id);
-          stockInfoMap[variant.id] = stockInfo;
-        }
-
-        setVariantStockInfo(stockInfoMap);
+        const stockInfoMap = await refreshVariantStockInfo(productData.product_variants);
 
         const inStockVariant = productData.product_variants.find((v: any) => {
           const info = stockInfoMap[v.id];
@@ -79,49 +97,110 @@ export default function ProductPage() {
         }
       }
 
-      const { data: related } = await supabase
-        .from('products')
-        .select(`
-          *,
-          product_variants (*)
-        `)
-        .eq('category', productData.category)
-        .neq('id', productData.id)
-        .limit(4);
+      if (user?.id) {
+        const { data: favorite } = await supabase
+          .from('user_favorites')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('product_id', productData.id)
+          .maybeSingle();
 
-      if (related) {
-        setRelatedProducts(related as ProductWithVariants[]);
+        setIsFavorite(Boolean(favorite?.id));
+        setFavoriteId(favorite?.id || null);
+      } else {
+        setIsFavorite(false);
+        setFavoriteId(null);
       }
 
-      const storedViewed = localStorage.getItem('recentlyViewed');
-      if (storedViewed) {
-        const viewedIds = JSON.parse(storedViewed).filter((id: string) => id !== productData.id).slice(0, 3);
+      const [recommendedProducts, viewedProducts] = await Promise.all([
+        getProductRecommendations({
+          currentProduct: productData,
+          userId: user?.id,
+          limit: 4,
+        }),
+        getRecentlyViewedProducts({
+          userId: user?.id,
+          excludeProductId: productData.id,
+          limit: 3,
+        }),
+      ]);
 
-        if (viewedIds.length > 0) {
-          const { data: viewedProducts } = await supabase
-            .from('products')
-            .select(`
-              *,
-              product_variants (*)
-            `)
-            .in('id', viewedIds);
-
-          if (viewedProducts) {
-            setRecentlyViewed(viewedProducts as ProductWithVariants[]);
-          }
-        }
-      }
-
-      const allViewed = storedViewed ? JSON.parse(storedViewed) : [];
-      const updatedViewed = [productData.id, ...allViewed.filter((id: string) => id !== productData.id)].slice(0, 10);
-      localStorage.setItem('recentlyViewed', JSON.stringify(updatedViewed));
+      setRelatedProducts(recommendedProducts);
+      setRecentlyViewed(viewedProducts);
 
     } catch (error) {
       console.error('Error loading product:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [refreshVariantStockInfo, sku, user?.id]);
+
+  useEffect(() => {
+    if (sku) {
+      void loadProduct();
+    }
+  }, [loadProduct, sku]);
+
+  useEffect(() => {
+    if (!product?.id || !product.product_variants?.length) {
+      setStockRealtimeStatus('offline');
+      return;
+    }
+
+    setStockRealtimeStatus('connecting');
+    const variantIdSet = new Set(product.product_variants.map((variant) => variant.id));
+
+    const refreshStockInfo = () => {
+      void refreshVariantStockInfo(product.product_variants || []);
+    };
+
+    const channel = supabase
+      .channel(`stock-live-${product.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'product_variants',
+          filter: `product_id=eq.${product.id}`,
+        },
+        refreshStockInfo
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stock_reservations',
+        },
+        (payload: any) => {
+          const variantId = payload?.new?.variant_id || payload?.old?.variant_id;
+          if (variantId && variantIdSet.has(variantId)) {
+            refreshStockInfo();
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setStockRealtimeStatus('live');
+          return;
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setStockRealtimeStatus('error');
+          return;
+        }
+
+        if (status === 'CLOSED') {
+          setStockRealtimeStatus('offline');
+        }
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+      setStockRealtimeStatus('offline');
+    };
+  }, [product?.id, product?.product_variants, refreshVariantStockInfo]);
 
   const selectedVariant = product?.product_variants?.find((v) => v.size === selectedSize);
   const selectedStockInfo = selectedVariant ? variantStockInfo[selectedVariant.id] : null;
@@ -168,6 +247,7 @@ export default function ProductPage() {
       });
 
       await trackAddToCart(product.id, selectedVariant.id, selectedSize, user?.id);
+      await trackRecommendationAddToCart(product.id, user?.id);
 
       toast({
         title: 'Added to cart',
@@ -192,10 +272,80 @@ export default function ProductPage() {
     }
   };
 
+  const handleFavoriteToggle = async () => {
+    if (!product || isFavoriteLoading) return;
+
+    if (!user) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to save favorites.',
+      });
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setIsFavoriteLoading(true);
+
+      if (isFavorite && favoriteId) {
+        const { error } = await supabase
+          .from('user_favorites')
+          .delete()
+          .eq('id', favoriteId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        setIsFavorite(false);
+        setFavoriteId(null);
+        toast({
+          title: 'Removed from favorites',
+          description: `${product.name} was removed from your favorites.`,
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('user_favorites')
+        .insert({
+          user_id: user.id,
+          product_id: product.id,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      setIsFavorite(true);
+      setFavoriteId(data.id);
+      toast({
+        title: 'Added to favorites',
+        description: `${product.name} was saved to your favorites.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Unable to update favorites',
+        description: 'Please try again in a moment.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
+
+  const stockRealtimeLabel =
+    stockRealtimeStatus === 'live'
+      ? 'Live stock updates active'
+      : stockRealtimeStatus === 'connecting'
+      ? 'Connecting live stock updates...'
+      : stockRealtimeStatus === 'error'
+      ? 'Live stock updates unavailable'
+      : 'Stock updates require refresh';
+
   if (loading) {
     return (
       <>
-        <Navbar
+        <Header
           cartCount={itemCount}
           onCartClick={() => setIsCartOpen(true)}
           onSearchClick={() => {}}
@@ -212,7 +362,7 @@ export default function ProductPage() {
   if (!product) {
     return (
       <>
-        <Navbar
+        <Header
           cartCount={itemCount}
           onCartClick={() => setIsCartOpen(true)}
           onSearchClick={() => {}}
@@ -231,7 +381,7 @@ export default function ProductPage() {
 
   return (
     <>
-      <Navbar
+      <Header
         cartCount={itemCount}
         onCartClick={() => setIsCartOpen(true)}
         onSearchClick={() => {}}
@@ -271,9 +421,11 @@ export default function ProductPage() {
               </p>
 
               {/* Price */}
-              <p className="text-2xl font-light mb-6">
-                ${product.price.toFixed(2)}
-              </p>
+              <PriceDisplay
+                amount={product.price}
+                baseCurrency={product.currency || 'USD'}
+                className="text-2xl font-light mb-6 block"
+              />
 
               {/* Color Row */}
               <div className="flex items-center justify-between border-t border-foreground/10 py-4">
@@ -291,6 +443,9 @@ export default function ProductPage() {
                     </span>
                   )}
                 </div>
+                <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {stockRealtimeLabel}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {product.product_variants?.map((variant) => {
                     const stockInfo = variantStockInfo[variant.id];
@@ -312,7 +467,7 @@ export default function ProductPage() {
                             ? 'bg-foreground text-background'
                             : variantOutOfStock
                             ? 'opacity-20 cursor-not-allowed line-through border border-foreground/10'
-                            : 'border border-foreground/20 hover:border-foreground/60 text-foreground'
+                            : 'border border-foreground/20 text-foreground/75 hover:border-foreground hover:bg-foreground hover:text-background'
                         }`}
                       >
                         {variant.size}
@@ -345,8 +500,9 @@ export default function ProductPage() {
                 </Button>
 
                 <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-xs tracking-[0.2em] uppercase border-b border-foreground/20 hover:border-foreground/50 transition-colors text-foreground/70 hover:text-foreground"
+                  onClick={handleFavoriteToggle}
+                  disabled={isFavoriteLoading}
+                  className="w-full flex items-center justify-center gap-2 border border-foreground/20 py-3 text-xs tracking-[0.2em] uppercase text-foreground/75 transition-colors duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
                   aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                   aria-pressed={isFavorite}
                 >
@@ -355,7 +511,7 @@ export default function ProductPage() {
                     strokeWidth={1.5}
                     className={isFavorite ? 'fill-foreground' : ''}
                   />
-                  Add to Favorites
+                  {isFavoriteLoading ? 'Saving...' : isFavorite ? 'Remove Favorite' : 'Add to Favorites'}
                 </button>
               </div>
 
@@ -385,57 +541,20 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Related Products */}
-          {relatedProducts.length > 0 && (
-            <div className="mt-24 pt-12 border-t border-foreground/10">
-              <h2 className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-10">You May Also Like</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {relatedProducts.map((related) => (
-                  <Link key={related.id} href={`/product/${related.sku}`} className="group">
-                    <div className="relative aspect-[3/4] bg-secondary overflow-hidden mb-4">
-                      <Image
-                        src={related.images[0]}
-                        alt={related.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-xs uppercase tracking-wider mb-1">{related.name}</h3>
-                      <p className="text-xs text-muted-foreground">${related.price.toFixed(2)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recently Viewed */}
-          {recentlyViewed.length > 0 && (
-            <div className="mt-20 pt-12 border-t border-foreground/10">
-              <h2 className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-10">Recently Viewed</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {recentlyViewed.map((viewed) => (
-                  <Link key={viewed.id} href={`/product/${viewed.sku}`} className="group">
-                    <div className="relative aspect-[3/4] bg-secondary overflow-hidden mb-4">
-                      <Image
-                        src={viewed.images[0]}
-                        alt={viewed.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-xs uppercase tracking-wider mb-1">{viewed.name}</h3>
-                      <p className="text-xs text-muted-foreground">${viewed.price.toFixed(2)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          <ProductRecommendations
+            relatedProducts={relatedProducts}
+            recentlyViewed={recentlyViewed}
+            sourceProductId={product.id}
+            userId={user?.id}
+            onRecommendationClick={(recommendedProductId, sourceProductId, recommendationUserId) => {
+              void trackRecommendationClick({
+                recommendedProductId,
+                sourceContext: 'product_page',
+                sourceProductId,
+                userId: recommendationUserId,
+              });
+            }}
+          />
         </div>
       </main>
 

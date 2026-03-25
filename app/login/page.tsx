@@ -70,7 +70,7 @@ export default function LoginPage() {
     <>
       <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
 
-      <main className="min-h-screen bg-background py-5xl">
+      <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-md mx-auto px-xl">
           <div className="space-y-3xl">
             <div className="text-center space-y-md">
@@ -115,11 +115,15 @@ export default function LoginPage() {
                   className="w-full"
                   onClick={handleAppleLogin}
                 >
-                  <svg className="w-5 h-5 mr-sm" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                  <svg className="w-5 h-5 mr-sm" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M16.37 1.43c0 1.14-.42 2.21-1.16 3.02-.87.94-2.28 1.67-3.5 1.57-.15-1.09.39-2.24 1.12-3 .81-.85 2.2-1.48 3.54-1.59zm4.5 16.24c-.47 1.08-1.03 2.08-1.73 3.03-.96 1.32-1.74 2.23-2.82 2.24-.97.02-1.22-.62-2.54-.62-1.31 0-1.59.61-2.54.64-1.04.04-1.84-1.05-2.81-2.37-2.71-3.69-3-8.02-1.32-10.59 1.19-1.84 3.08-2.92 4.86-2.92 1.08 0 2.09.73 2.8.73.69 0 1.98-.9 3.34-.77.57.03 2.19.23 3.23 1.75-.08.05-1.93 1.13-1.91 3.38.02 2.69 2.34 3.59 2.44 3.62z"
+                    />
                   </svg>
                   Continue with Apple
                 </Button>
+
               </div>
 
               <div className="relative">
@@ -156,6 +160,11 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     required
                   />
+                  <div className="flex justify-end">
+                    <Link href="/forgot-password" className="text-xs underline hover:text-foreground">
+                      Forgot password?
+                    </Link>
+                  </div>
                 </div>
 
                 <Button
@@ -169,7 +178,7 @@ export default function LoginPage() {
 
               <div className="text-center text-sm space-y-sm">
                 <p className="text-muted-foreground">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link href="/signup" className="underline hover:text-foreground">
                     Sign up
                   </Link>

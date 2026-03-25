@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
@@ -29,19 +29,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      loadProfile();
-    }
-  }, [user, authLoading, router]);
-
-  const loadProfile = async () => {
-    if (!user) return;
+  const loadProfile = useCallback(async () => {
+    if (!user?.id) return;
 
     const { data, error } = await supabase
       .from('user_profiles')
@@ -60,7 +49,18 @@ export default function DashboardPage() {
     }
 
     setLoading(false);
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      void loadProfile();
+    }
+  }, [user, authLoading, router, loadProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +122,6 @@ export default function DashboardPage() {
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="bg-neutral-50"
               />
               <p className="text-xs text-muted-foreground">
                 Email cannot be changed

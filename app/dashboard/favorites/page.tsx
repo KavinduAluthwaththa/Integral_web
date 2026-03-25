@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ interface Favorite {
     id: string;
     name: string;
     sku: string;
-    base_price: number;
+    price: number;
     images: string[];
   };
 }
@@ -28,19 +28,8 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      loadFavorites();
-    }
-  }, [user, authLoading, router]);
-
-  const loadFavorites = async () => {
-    if (!user) return;
+  const loadFavorites = useCallback(async () => {
+    if (!user?.id) return;
 
     const { data, error } = await supabase
       .from('user_favorites')
@@ -50,7 +39,7 @@ export default function FavoritesPage() {
           id,
           name,
           sku,
-          base_price,
+          price,
           images
         )
       `)
@@ -62,7 +51,18 @@ export default function FavoritesPage() {
     }
 
     setLoading(false);
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      void loadFavorites();
+    }
+  }, [user, authLoading, router, loadFavorites]);
 
   const removeFavorite = async (id: string) => {
     await supabase
@@ -89,7 +89,7 @@ export default function FavoritesPage() {
         <div className="space-y-sm">
           <h1 className="text-2xl font-light tracking-wide">Favorites</h1>
           <p className="text-muted-foreground">
-            Items you've saved for later.
+            Items you&apos;ve saved for later.
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export default function FavoritesPage() {
                     </p>
                   </Link>
                   <p className="text-sm font-light">
-                    ${favorite.products.base_price.toFixed(2)}
+                    ${favorite.products.price.toFixed(2)}
                   </p>
 
                   <Button

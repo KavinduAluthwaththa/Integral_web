@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
@@ -48,19 +48,8 @@ export default function AddressesPage() {
     is_default: false,
   });
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      loadAddresses();
-    }
-  }, [user, authLoading, router]);
-
-  const loadAddresses = async () => {
-    if (!user) return;
+  const loadAddresses = useCallback(async () => {
+    if (!user?.id) return;
 
     const { data, error } = await supabase
       .from('user_addresses')
@@ -74,7 +63,18 @@ export default function AddressesPage() {
     }
 
     setLoading(false);
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      void loadAddresses();
+    }
+  }, [user, authLoading, router, loadAddresses]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -183,7 +183,7 @@ export default function AddressesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-sm">
             <h1 className="text-2xl font-light tracking-wide">Address Book</h1>
             <p className="text-muted-foreground">
@@ -191,6 +191,7 @@ export default function AddressesPage() {
             </p>
           </div>
           <Button
+            className="w-full sm:w-auto"
             onClick={() => {
               resetForm();
               setEditingAddress(null);

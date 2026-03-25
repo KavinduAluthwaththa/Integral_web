@@ -9,32 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCart } from '@/lib/cart-context';
-
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'Essential Hoodie',
-    image: 'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: '2',
-    name: 'Oversized Tee',
-    image: 'https://images.pexels.com/photos/4069148/pexels-photo-4069148.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: '3',
-    name: 'Wide Leg Pants',
-    image: 'https://images.pexels.com/photos/3622622/pexels-photo-3622622.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-];
+import { useHomeCatalog } from '@/hooks/catalog/use-home-catalog';
 
 
 export default function Home() {
+  const heroYouTubeEmbedUrl = 'https://www.youtube.com/embed/CHSnz0bCaUk?autoplay=1&mute=1&loop=1&playlist=CHSnz0bCaUk&controls=0&rel=0&modestbranding=1&playsinline=1&vq=hd720';
+
   const { itemCount } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [email, setEmail] = useState('');
+  const { featuredProducts, productNames, loadingFeaturedProducts } = useHomeCatalog();
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +40,44 @@ export default function Home() {
       <main className="bg-background">
         {/* Hero Section */}
         <section className="relative min-h-screen flex items-center justify-center bg-background" aria-label="Hero section">
+          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+            <iframe
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[140vh] w-[250vw] min-h-[900px] min-w-[1600px] -translate-x-1/2 -translate-y-1/2"
+              src={heroYouTubeEmbedUrl}
+              title="Hero background video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              tabIndex={-1}
+            />
+          </div>
           <div className="absolute inset-0 bg-secondary/30" aria-hidden="true" />
           <div className="relative z-10 container mx-auto px-md text-center space-y-xl py-4xl">
-            <h1 className="text-6xl md:text-7xl lg:text-8xl tracking-tighter">
-              Urban Essence
-            </h1>
-            <Button variant="default" size="lg" className="group" aria-label="Visit shop" asChild>
+            <h1 className="sr-only">Integral</h1>
+            <div className="mx-auto w-full max-w-[720px] md:max-w-[940px] lg:max-w-[1120px]">
+              <div
+                className="h-[150px] w-full bg-white md:h-[210px] lg:h-[270px]"
+                style={{
+                  WebkitMaskImage: "url('/brand/logo/logo.svg')",
+                  maskImage: "url('/brand/logo/logo.svg')",
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                }}
+                aria-hidden="true"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              className="group border-white text-white hover:bg-white hover:text-foreground"
+              aria-label="Visit shop"
+              asChild
+            >
               <a href="/shop">
                 Visit Shop
                 <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={20} aria-hidden="true" />
@@ -70,24 +89,40 @@ export default function Home() {
         {/* Featured Products */}
         <section className="py-4xl border-y-2 border-foreground">
           <div className="container mx-auto px-md">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-xl">
-              {featuredProducts.map((product, index) => (
-                <div key={product.id} className="space-y-lg">
-                  <div className="relative aspect-[3/4] bg-secondary border-2 border-foreground overflow-hidden group">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      quality={85}
-                      priority={index === 0}
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+            {loadingFeaturedProducts ? (
+              <div className="flex items-center justify-center py-20">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Loading featured products</p>
+              </div>
+            ) : featuredProducts.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Featured products coming soon</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-xl">
+                {featuredProducts.map((product, index) => (
+                  <div key={product.id} className="space-y-lg">
+                    <div className="relative aspect-[3/4] bg-secondary border-2 border-foreground overflow-hidden group">
+                      {product.image ? (
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          quality={85}
+                          priority={index === 0}
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center px-6 text-center text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                          Image coming soon
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-center text-lg">{product.name}</h3>
                   </div>
-                  <h3 className="text-center text-lg">{product.name}</h3>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -110,10 +145,12 @@ export default function Home() {
                     Quality over quantity. Essence over excess. This is streetwear redefined.
                   </p>
                 </div>
-                <Button variant="outline" className="group">
-                  Our Story
-                  <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={18} />
-                </Button>
+                <Link href="/about" className="inline-flex mt-4">
+                  <Button variant="outline" className="group">
+                    Our Story
+                    <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={18} />
+                  </Button>
+                </Link>
               </div>
               <div className="relative aspect-[4/5] bg-secondary border-2 border-foreground overflow-hidden">
                 <Image
@@ -208,7 +245,7 @@ export default function Home() {
         size="lg"
       >
         <SearchBar
-          suggestions={featuredProducts.map((p) => p.name)}
+          suggestions={productNames}
           className="w-full"
         />
       </Modal>

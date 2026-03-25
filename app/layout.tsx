@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { CartProvider } from '@/lib/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
+import { CurrencyProvider } from '@/lib/currency-context-geo';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
 
@@ -15,8 +16,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://streetwear.example.com'),
   title: {
-    default: 'Streetwear - Premium Urban Fashion',
-    template: '%s | Streetwear',
+    default: 'INTEGRAL - Premium Streetwear',
+    template: '%s | Integral',
+  },
+  icons: {
+    icon: '/brand/logo/logo.svg',
+    shortcut: '/brand/logo/logo.svg',
+    apple: '/brand/logo/logo.svg',
   },
   description: 'Discover premium streetwear with minimal aesthetic and bold attitude. Shop the latest collections of hoodies, t-shirts, and accessories.',
   keywords: ['streetwear', 'fashion', 'urban clothing', 'hoodies', 't-shirts', 'accessories', 'premium fashion'],
@@ -76,11 +82,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <CartProvider>
-            <AnalyticsTracker />
-            {children}
-            <Toaster />
-          </CartProvider>
+          <CurrencyProvider>
+            <CartProvider>
+              <AnalyticsTracker />
+              {children}
+              <Toaster />
+            </CartProvider>
+          </CurrencyProvider>
         </AuthProvider>
       </body>
     </html>

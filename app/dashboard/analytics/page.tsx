@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import {
   getAnalyticsSummary,
@@ -12,7 +12,7 @@ import {
   AnalyticsSummary,
 } from '@/lib/analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, ShoppingCart, DollarSign, Eye, Package, Shirt } from 'lucide-react';
+import { TrendingUp, Users, ShoppingCart, DollarSign, Eye, Shirt } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -24,11 +24,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(30);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [dateRange]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     const startDate = new Date(Date.now() - dateRange * 24 * 60 * 60 * 1000);
     const endDate = new Date();
@@ -49,7 +45,11 @@ export default function AnalyticsPage() {
     setSignupsOverTime(signupsData);
     setRevenueOverTime(revenueData);
     setLoading(false);
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    void loadAnalytics();
+  }, [loadAnalytics]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -119,7 +119,6 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
-            {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -174,7 +173,6 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* User Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -267,7 +265,6 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* Product Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -341,7 +338,6 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* Revenue Over Time */}
             {revenueOverTime.length > 0 && (
               <Card>
                 <CardHeader>

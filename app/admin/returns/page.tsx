@@ -1,37 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navbar } from '@/components/navigation/navbar';
 import { useCart } from '@/lib/cart-context';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth-context';
+import { useAdminGuard } from '@/hooks/admin/use-admin-guard';
+import { createAdminApiClient } from '@/lib/admin/api-client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ReturnRequestCard } from '@/components/admin/returns/return-request-card';
 import {
-  getAllReturnRequests,
-  getReturnRequestDetails,
-  approveReturnRequest,
-  rejectReturnRequest,
-  updateReturnStatus,
-  createRefundTransaction,
-  completeRefundTransaction,
   ReturnRequest,
   ReturnItem,
   RefundTransaction,
   ReturnStatus,
   TransactionType,
-  getReturnStatusBadgeColor,
-  getReturnStatusLabel,
 } from '@/lib/returns-service';
-import { Clock, CircleCheck as CheckCircle2, Circle as XCircle, Package, CircleAlert as AlertCircle, DollarSign } from 'lucide-react';
+import { getReturnStatusBadgeColor, getReturnStatusLabel } from '@/lib/returns/status-ui';
+import { Clock, CircleCheck as CheckCircle2, Circle as XCircle, Package, DollarSign } from 'lucide-react';
 
 export default function AdminReturnsPage() {
+  const { session } = useAuth();
   const { itemCount } = useCart();
+  const { isAdmin, checkingAdmin } = useAdminGuard();
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
@@ -43,24 +41,44 @@ export default function AdminReturnsPage() {
   const [newStatus, setNewStatus] = useState<ReturnStatus>('processing');
   const [refundType, setRefundType] = useState<TransactionType>('refund');
   const [refundAmount, setRefundAmount] = useState('0');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'processing' | 'completed' | 'all'>('pending');
+  const apiRequest = useMemo(() => createAdminApiClient(session?.access_token), [session?.access_token]);
 
-  const loadReturns = async () => {
+  const loadReturns = useCallback(async () => {
     setLoading(true);
-    const data = await getAllReturnRequests();
-    setReturns(data);
+    try {
+      const payload = await apiRequest('/api/admin/returns', { method: 'GET' });
+      setReturns(payload.data || []);
+    } catch (error) {
+      console.error('Failed to load returns', error);
+      setReturns([]);
+    }
     setLoading(false);
-  };
+  }, [apiRequest]);
 
   useEffect(() => {
-    loadReturns();
-  }, []);
+    if (isAdmin && session?.access_token) {
+      void loadReturns();
+    }
+  }, [isAdmin, loadReturns, session?.access_token]);
 
   const handleViewDetails = async (returnRequest: ReturnRequest) => {
     setSelectedReturn(returnRequest);
     setDetailsLoading(true);
-    const details = await getReturnRequestDetails(returnRequest.id);
-    setReturnItems(details.items);
-    setTransactions(details.transactions);
+    try {
+      const payload = await apiRequest(`/api/admin/returns/${returnRequest.id}`, {
+        method: 'GET',
+      });
+      setReturnItems(payload.data?.items || []);
+      setTransactions(payload.data?.transactions || []);
+      if (payload.data?.returnRequest) {
+        setSelectedReturn(payload.data.returnRequest);
+      }
+    } catch (error) {
+      console.error('Failed to load return details', error);
+      setReturnItems([]);
+      setTransactions([]);
+    }
     setDetailsLoading(false);
     setRefundAmount(returnRequest.refund_amount.toString());
   };
@@ -68,16 +86,19 @@ export default function AdminReturnsPage() {
   const handleApprove = async () => {
     if (!selectedReturn) return;
 
-    const result = await approveReturnRequest(selectedReturn.id, adminNotes);
-    if (result.success) {
+    try {
+      await apiRequest(`/api/admin/returns/${selectedReturn.id}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'approve', adminNotes }),
+      });
       setActionDialog(null);
       setAdminNotes('');
       loadReturns();
       if (selectedReturn) {
         handleViewDetails({ ...selectedReturn, status: 'approved' });
       }
-    } else {
-      alert(result.error || 'Failed to approve return');
+    } catch (error: any) {
+      alert(error?.message || 'Failed to approve return');
     }
   };
 
@@ -87,24 +108,34 @@ export default function AdminReturnsPage() {
       return;
     }
 
-    const result = await rejectReturnRequest(selectedReturn.id, adminNotes);
-    if (result.success) {
+    try {
+      await apiRequest(`/api/admin/returns/${selectedReturn.id}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'reject', adminNotes }),
+      });
       setActionDialog(null);
       setAdminNotes('');
       loadReturns();
       if (selectedReturn) {
         handleViewDetails({ ...selectedReturn, status: 'rejected' });
       }
-    } else {
-      alert(result.error || 'Failed to reject return');
+    } catch (error: any) {
+      alert(error?.message || 'Failed to reject return');
     }
   };
 
   const handleUpdateStatus = async () => {
     if (!selectedReturn) return;
 
-    const result = await updateReturnStatus(selectedReturn.id, newStatus, adminNotes);
-    if (result.success) {
+    try {
+      await apiRequest(`/api/admin/returns/${selectedReturn.id}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'update_status',
+          status: newStatus,
+          adminNotes,
+        }),
+      });
       setActionDialog(null);
       setAdminNotes('');
       setNewStatus('processing');
@@ -112,8 +143,8 @@ export default function AdminReturnsPage() {
       if (selectedReturn) {
         handleViewDetails({ ...selectedReturn, status: newStatus });
       }
-    } else {
-      alert(result.error || 'Failed to update status');
+    } catch (error: any) {
+      alert(error?.message || 'Failed to update status');
     }
   };
 
@@ -126,33 +157,37 @@ export default function AdminReturnsPage() {
       return;
     }
 
-    const result = await createRefundTransaction({
-      returnRequestId: selectedReturn.id,
-      transactionType: refundType,
-      amount,
-      paymentMethod: 'credit_card',
-      notes: adminNotes,
-    });
-
-    if (result.success) {
+    try {
+      await apiRequest(`/api/admin/returns/${selectedReturn.id}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'create_refund_transaction',
+          transactionType: refundType,
+          amount,
+          paymentMethod: 'credit_card',
+          adminNotes,
+        }),
+      });
       setActionDialog(null);
       setAdminNotes('');
       if (selectedReturn) {
         handleViewDetails(selectedReturn);
       }
-    } else {
-      alert(result.error || 'Failed to create refund transaction');
+    } catch (error: any) {
+      alert(error?.message || 'Failed to create refund transaction');
     }
   };
 
   const handleCompleteTransaction = async (transactionId: string) => {
-    const result = await completeRefundTransaction(transactionId);
-    if (result.success) {
+    try {
+      await apiRequest(`/api/admin/returns/transactions/${transactionId}/complete`, {
+        method: 'POST',
+      });
       if (selectedReturn) {
         handleViewDetails(selectedReturn);
       }
-    } else {
-      alert(result.error || 'Failed to complete transaction');
+    } catch (error: any) {
+      alert(error?.message || 'Failed to complete transaction');
     }
   };
 
@@ -160,55 +195,31 @@ export default function AdminReturnsPage() {
   const approvedReturns = returns.filter(r => r.status === 'approved');
   const processingReturns = returns.filter(r => r.status === 'processing');
   const completedReturns = returns.filter(r => ['completed', 'rejected', 'cancelled'].includes(r.status));
+  const adminCardClasses = 'rounded-none border-2 border-foreground shadow-none';
 
-  const ReturnCard = ({ returnRequest }: { returnRequest: ReturnRequest }) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{returnRequest.return_number}</CardTitle>
-            <CardDescription className="mt-1">
-              Order: {returnRequest.order_id.slice(0, 8)}... • Requested on {new Date(returnRequest.requested_at).toLocaleDateString()}
-            </CardDescription>
+  if (checkingAdmin) {
+    return (
+      <>
+        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <main className="min-h-screen bg-background pt-4xl pb-4xl">
+          <div className="max-w-7xl mx-auto px-xl">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-muted-foreground">Loading admin access...</div>
+            </div>
           </div>
-          <Badge className={getReturnStatusBadgeColor(returnRequest.status)}>
-            {getReturnStatusLabel(returnRequest.status)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">Reason:</span>
-            <p className="font-medium">{returnRequest.reason.replace(/_/g, ' ')}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Refund Amount:</span>
-            <p className="font-medium">${returnRequest.refund_amount.toFixed(2)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Refund Method:</span>
-            <p className="font-medium">
-              {returnRequest.refund_method === 'original_payment'
-                ? 'Original Payment'
-                : returnRequest.refund_method === 'store_credit'
-                ? 'Store Credit'
-                : 'Exchange'}
-            </p>
-          </div>
-        </div>
+        </main>
+      </>
+    );
+  }
 
-        <Button variant="outline" size="sm" onClick={() => handleViewDetails(returnRequest)}>
-          View & Manage
-        </Button>
-      </CardContent>
-    </Card>
-  );
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <>
       <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
-      <main className="min-h-screen bg-background py-5xl">
+      <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl">
           <div className="mb-8">
             <h1 className="text-3xl font-light tracking-wide">Returns Management</h1>
@@ -216,63 +227,68 @@ export default function AdminReturnsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card>
+            <Card className={adminCardClasses}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+                <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Pending Review</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{pendingReturns.length}</div>
+                <div className="text-3xl font-light tracking-tight">{pendingReturns.length}</div>
                 <p className="text-xs text-muted-foreground">Needs approval</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={adminCardClasses}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Approved</CardTitle>
                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{approvedReturns.length}</div>
+                <div className="text-3xl font-light tracking-tight">{approvedReturns.length}</div>
                 <p className="text-xs text-muted-foreground">Ready to process</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={adminCardClasses}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Processing</CardTitle>
+                <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Processing</CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{processingReturns.length}</div>
+                <div className="text-3xl font-light tracking-tight">{processingReturns.length}</div>
                 <p className="text-xs text-muted-foreground">In progress</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={adminCardClasses}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Completed</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{completedReturns.length}</div>
+                <div className="text-3xl font-light tracking-tight">{completedReturns.length}</div>
                 <p className="text-xs text-muted-foreground">Fully processed</p>
               </CardContent>
             </Card>
           </div>
 
-          <Tabs defaultValue="pending" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="pending">Pending ({pendingReturns.length})</TabsTrigger>
-              <TabsTrigger value="approved">Approved ({approvedReturns.length})</TabsTrigger>
-              <TabsTrigger value="processing">Processing ({processingReturns.length})</TabsTrigger>
-              <TabsTrigger value="completed">Completed ({completedReturns.length})</TabsTrigger>
-              <TabsTrigger value="all">All ({returns.length})</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'pending' | 'approved' | 'processing' | 'completed' | 'all')} className="space-y-4">
+            <Select value={activeTab} onValueChange={(value) => setActiveTab(value as 'pending' | 'approved' | 'processing' | 'completed' | 'all')}>
+              <SelectTrigger className="h-10 w-full rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
+                <SelectValue placeholder="Filter returns" className="uppercase tracking-[0.12em]" />
+              </SelectTrigger>
+              <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+                <SelectItem value="pending" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Pending ({pendingReturns.length})</SelectItem>
+                <SelectItem value="approved" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Approved ({approvedReturns.length})</SelectItem>
+                <SelectItem value="processing" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Processing ({processingReturns.length})</SelectItem>
+                <SelectItem value="completed" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Completed ({completedReturns.length})</SelectItem>
+                <SelectItem value="all" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">All ({returns.length})</SelectItem>
+              </SelectContent>
+            </Select>
 
             <TabsContent value="pending" className="space-y-4">
               {pendingReturns.length === 0 ? (
-                <Card>
+                <Card className={adminCardClasses}>
                   <CardContent className="py-12 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No pending returns</p>
@@ -280,14 +296,14 @@ export default function AdminReturnsPage() {
                 </Card>
               ) : (
                 pendingReturns.map(returnRequest => (
-                  <ReturnCard key={returnRequest.id} returnRequest={returnRequest} />
+                  <ReturnRequestCard key={returnRequest.id} returnRequest={returnRequest} onView={handleViewDetails} />
                 ))
               )}
             </TabsContent>
 
             <TabsContent value="approved" className="space-y-4">
               {approvedReturns.length === 0 ? (
-                <Card>
+                <Card className={adminCardClasses}>
                   <CardContent className="py-12 text-center">
                     <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No approved returns</p>
@@ -295,14 +311,14 @@ export default function AdminReturnsPage() {
                 </Card>
               ) : (
                 approvedReturns.map(returnRequest => (
-                  <ReturnCard key={returnRequest.id} returnRequest={returnRequest} />
+                  <ReturnRequestCard key={returnRequest.id} returnRequest={returnRequest} onView={handleViewDetails} />
                 ))
               )}
             </TabsContent>
 
             <TabsContent value="processing" className="space-y-4">
               {processingReturns.length === 0 ? (
-                <Card>
+                <Card className={adminCardClasses}>
                   <CardContent className="py-12 text-center">
                     <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No returns being processed</p>
@@ -310,14 +326,14 @@ export default function AdminReturnsPage() {
                 </Card>
               ) : (
                 processingReturns.map(returnRequest => (
-                  <ReturnCard key={returnRequest.id} returnRequest={returnRequest} />
+                  <ReturnRequestCard key={returnRequest.id} returnRequest={returnRequest} onView={handleViewDetails} />
                 ))
               )}
             </TabsContent>
 
             <TabsContent value="completed" className="space-y-4">
               {completedReturns.length === 0 ? (
-                <Card>
+                <Card className={adminCardClasses}>
                   <CardContent className="py-12 text-center">
                     <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No completed returns</p>
@@ -325,21 +341,21 @@ export default function AdminReturnsPage() {
                 </Card>
               ) : (
                 completedReturns.map(returnRequest => (
-                  <ReturnCard key={returnRequest.id} returnRequest={returnRequest} />
+                  <ReturnRequestCard key={returnRequest.id} returnRequest={returnRequest} onView={handleViewDetails} />
                 ))
               )}
             </TabsContent>
 
             <TabsContent value="all" className="space-y-4">
               {loading ? (
-                <Card>
+                <Card className={adminCardClasses}>
                   <CardContent className="py-12 text-center">
                     <p className="text-muted-foreground">Loading returns...</p>
                   </CardContent>
                 </Card>
               ) : (
                 returns.map(returnRequest => (
-                  <ReturnCard key={returnRequest.id} returnRequest={returnRequest} />
+                  <ReturnRequestCard key={returnRequest.id} returnRequest={returnRequest} onView={handleViewDetails} />
                 ))
               )}
             </TabsContent>
@@ -349,9 +365,9 @@ export default function AdminReturnsPage() {
 
       {selectedReturn && (
         <Dialog open={!!selectedReturn} onOpenChange={() => setSelectedReturn(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none border-2 border-foreground">
             <DialogHeader>
-              <DialogTitle>{selectedReturn.return_number}</DialogTitle>
+              <DialogTitle className="text-base font-light tracking-wide">{selectedReturn.return_number}</DialogTitle>
               <DialogDescription>Return request management</DialogDescription>
             </DialogHeader>
 
@@ -368,11 +384,11 @@ export default function AdminReturnsPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Requested On</p>
-                    <p className="font-medium">{new Date(selectedReturn.requested_at).toLocaleDateString()}</p>
+                    <p className="font-light tracking-wide">{new Date(selectedReturn.requested_at).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Refund Method</p>
-                    <p className="font-medium">
+                    <p className="font-light tracking-wide">
                       {selectedReturn.refund_method === 'original_payment'
                         ? 'Original Payment'
                         : selectedReturn.refund_method === 'store_credit'
@@ -382,7 +398,7 @@ export default function AdminReturnsPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Refund Amount</p>
-                    <p className="font-medium text-lg">${selectedReturn.refund_amount.toFixed(2)}</p>
+                    <p className="text-lg font-light tracking-wide">${selectedReturn.refund_amount.toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -401,14 +417,14 @@ export default function AdminReturnsPage() {
                 )}
 
                 <div>
-                  <h3 className="font-medium mb-3">Return Items</h3>
+                  <h3 className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Return Items</h3>
                   <div className="space-y-2">
                     {returnItems.map(item => (
-                      <Card key={item.id}>
+                      <Card key={item.id} className={adminCardClasses}>
                         <CardContent className="p-4">
                           <div className="flex justify-between">
                             <div>
-                              <p className="font-medium">{item.product_name}</p>
+                              <p className="font-light tracking-wide">{item.product_name}</p>
                               <p className="text-sm text-muted-foreground">
                                 SKU: {item.product_sku} • Size: {item.size} • Qty: {item.quantity}
                               </p>
@@ -419,7 +435,7 @@ export default function AdminReturnsPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">${item.refund_amount.toFixed(2)}</p>
+                              <p className="font-light tracking-wide">${item.refund_amount.toFixed(2)}</p>
                             </div>
                           </div>
                         </CardContent>
@@ -430,20 +446,20 @@ export default function AdminReturnsPage() {
 
                 {transactions.length > 0 && (
                   <div>
-                    <h3 className="font-medium mb-3">Refund Transactions</h3>
+                    <h3 className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Refund Transactions</h3>
                     <div className="space-y-2">
                       {transactions.map(transaction => (
-                        <Card key={transaction.id}>
+                        <Card key={transaction.id} className={adminCardClasses}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="font-medium capitalize">{transaction.transaction_type}</p>
+                                <p className="font-light tracking-wide capitalize">{transaction.transaction_type}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {transaction.status} • {new Date(transaction.created_at).toLocaleDateString()}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <p className="font-medium">${transaction.amount.toFixed(2)}</p>
+                                <p className="font-light tracking-wide">${transaction.amount.toFixed(2)}</p>
                                 {transaction.status === 'pending' && (
                                   <Button
                                     size="sm"
@@ -493,7 +509,7 @@ export default function AdminReturnsPage() {
       )}
 
       <Dialog open={actionDialog === 'approve'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-none border-2 border-foreground">
           <DialogHeader>
             <DialogTitle>Approve Return Request</DialogTitle>
             <DialogDescription>Approve this return and allow processing to begin.</DialogDescription>
@@ -518,7 +534,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'reject'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-none border-2 border-foreground">
           <DialogHeader>
             <DialogTitle>Reject Return Request</DialogTitle>
             <DialogDescription>Please provide a reason for rejecting this return.</DialogDescription>
@@ -544,7 +560,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'status'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-none border-2 border-foreground">
           <DialogHeader>
             <DialogTitle>Update Return Status</DialogTitle>
             <DialogDescription>Change the status of this return request.</DialogDescription>
@@ -553,10 +569,10 @@ export default function AdminReturnsPage() {
             <div>
               <Label htmlFor="new-status">New Status</Label>
               <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReturnStatus)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -582,7 +598,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'refund'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-none border-2 border-foreground">
           <DialogHeader>
             <DialogTitle>Process Refund</DialogTitle>
             <DialogDescription>Create a refund transaction for this return.</DialogDescription>
@@ -591,10 +607,10 @@ export default function AdminReturnsPage() {
             <div>
               <Label htmlFor="refund-type">Transaction Type</Label>
               <Select value={refundType} onValueChange={(value) => setRefundType(value as TransactionType)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
                   <SelectItem value="refund">Refund</SelectItem>
                   <SelectItem value="store_credit">Store Credit</SelectItem>
                   <SelectItem value="exchange">Exchange</SelectItem>
