@@ -11,6 +11,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'wpvauifxcraxchmbzlqb.supabase.co',
+      },
+      {
+        protocol: 'https',
         hostname: 'bolt.new',
       },
     ],
