@@ -59,14 +59,32 @@ export interface CreateReturnRequestParams {
   description?: string;
   refundMethod: RefundMethod;
   items: Array<{
-    productSku: string;
-    productName: string;
-    size: string;
+    orderItemId: string;
     quantity: number;
-    price: number;
-    refundAmount: number;
     condition?: string;
   }>;
+}
+
+export interface ReturnableOrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  products: {
+    sku: string;
+    name: string;
+  } | null;
+  product_variants: {
+    size: string;
+  } | null;
+}
+
+export interface ReturnableOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  created_at: string;
+  total: number;
+  order_items: ReturnableOrderItem[];
 }
 
 export async function createReturnRequest(params: CreateReturnRequestParams): Promise<{ success: boolean; returnRequest?: ReturnRequest; error?: string }> {
@@ -74,6 +92,10 @@ export async function createReturnRequest(params: CreateReturnRequestParams): Pr
 
   if (!user) {
     return { success: false, error: 'User not authenticated' };
+  }
+
+  if (!params.items.length) {
+    return { success: false, error: 'Select at least one order item to return' };
   }
 
   const { data: order, error: orderError } = await supabase
@@ -87,7 +109,82 @@ export async function createReturnRequest(params: CreateReturnRequestParams): Pr
     return { success: false, error: 'Order not found' };
   }
 
-  const totalRefundAmount = params.items.reduce((sum, item) => sum + item.refundAmount, 0);
+  if (order.status === 'pending' || order.status === 'cancelled') {
+    return { success: false, error: 'This order is not eligible for returns yet' };
+  }
+
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from('order_items')
+    .select(`
+      id,
+      quantity,
+      price,
+      products (sku, name),
+      product_variants (size)
+    `)
+    .eq('order_id', params.orderId);
+
+  if (orderItemsError || !orderItems) {
+    return { success: false, error: 'Unable to load order items for return validation' };
+  }
+
+  const orderItemById = new Map<string, any>(orderItems.map((item: any) => [item.id, item]));
+  const seenOrderItemIds = new Set<string>();
+
+  let normalizedItems: Array<{
+    order_item_id: string;
+    product_sku: string;
+    product_name: string;
+    size: string;
+    quantity: number;
+    price: number;
+    refund_amount: number;
+    condition: string | null;
+  }> = [];
+
+  try {
+    normalizedItems = params.items.map((requestedItem) => {
+      if (!requestedItem.orderItemId || seenOrderItemIds.has(requestedItem.orderItemId)) {
+        throw new Error('Duplicate or invalid order item selection');
+      }
+
+      seenOrderItemIds.add(requestedItem.orderItemId);
+      const orderItem = orderItemById.get(requestedItem.orderItemId);
+
+      if (!orderItem) {
+        throw new Error('One or more selected items do not belong to this order');
+      }
+
+      if (!Number.isInteger(requestedItem.quantity) || requestedItem.quantity <= 0) {
+        throw new Error('Return quantity must be a positive whole number');
+      }
+
+      if (requestedItem.quantity > orderItem.quantity) {
+        throw new Error('Return quantity cannot exceed purchased quantity');
+      }
+
+      const price = Number(orderItem.price || 0);
+      const refundAmount = price * requestedItem.quantity;
+
+      return {
+        order_item_id: requestedItem.orderItemId,
+        product_sku: orderItem.products?.sku || 'UNKNOWN',
+        product_name: orderItem.products?.name || 'Unknown Product',
+        size: orderItem.product_variants?.size || 'N/A',
+        quantity: requestedItem.quantity,
+        price,
+        refund_amount: refundAmount,
+        condition: requestedItem.condition || null,
+      };
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Invalid return request items',
+    };
+  }
+
+  const totalRefundAmount = normalizedItems.reduce((sum, item) => sum + item.refund_amount, 0);
 
   const { data: returnRequest, error: returnError } = await supabase
     .from('return_requests')
@@ -108,14 +205,15 @@ export async function createReturnRequest(params: CreateReturnRequestParams): Pr
     return { success: false, error: 'Failed to create return request' };
   }
 
-  const itemsToInsert = params.items.map(item => ({
+  const itemsToInsert = normalizedItems.map(item => ({
     return_request_id: returnRequest.id,
-    product_sku: item.productSku,
-    product_name: item.productName,
+    order_item_id: item.order_item_id,
+    product_sku: item.product_sku,
+    product_name: item.product_name,
     size: item.size,
     quantity: item.quantity,
     price: item.price,
-    refund_amount: item.refundAmount,
+    refund_amount: item.refund_amount,
     condition: item.condition,
   }));
 
@@ -134,19 +232,22 @@ export async function createReturnRequest(params: CreateReturnRequestParams): Pr
     .eq('id', user.id)
     .maybeSingle();
 
-  if (userProfile?.email) {
+  const customerEmail = userProfile?.email || user.email;
+  const customerName = userProfile?.full_name || user.email?.split('@')[0] || 'Customer';
+
+  if (customerEmail) {
     await sendReturnConfirmationEmail({
       returnNumber: returnRequest.return_number,
       orderNumber: order.order_number || params.orderId,
-      customerName: userProfile.full_name || 'Customer',
-      customerEmail: userProfile.email,
+      customerName,
+      customerEmail,
       returnDate: new Date(returnRequest.requested_at).toLocaleDateString(),
-      items: params.items.map(item => ({
-        name: item.productName,
-        sku: item.productSku,
+      items: normalizedItems.map(item => ({
+        name: item.product_name,
+        sku: item.product_sku,
         size: item.size,
         quantity: item.quantity,
-        refundAmount: item.refundAmount,
+        refundAmount: item.refund_amount,
       })),
       totalRefund: totalRefundAmount,
       refundMethod: params.refundMethod === 'original_payment' ? 'Original Payment Method' :
@@ -156,6 +257,58 @@ export async function createReturnRequest(params: CreateReturnRequestParams): Pr
   }
 
   return { success: true, returnRequest };
+}
+
+export async function getUserOrdersForReturn(): Promise<ReturnableOrder[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      id,
+      order_number,
+      status,
+      created_at,
+      total,
+      order_items (
+        id,
+        quantity,
+        price,
+        products (sku, name),
+        product_variants (size)
+      )
+    `)
+    .eq('user_id', user.id)
+    .in('status', ['processing', 'shipped', 'delivered'])
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch returnable orders:', error);
+    return [];
+  }
+
+  const normalizedOrders: ReturnableOrder[] = (data || []).map((order: any) => ({
+    id: order.id,
+    order_number: order.order_number,
+    status: order.status,
+    created_at: order.created_at,
+    total: Number(order.total || 0),
+    order_items: (order.order_items || []).map((item: any) => ({
+      id: item.id,
+      quantity: Number(item.quantity || 0),
+      price: Number(item.price || 0),
+      products: Array.isArray(item.products) ? item.products[0] || null : item.products,
+      product_variants: Array.isArray(item.product_variants)
+        ? item.product_variants[0] || null
+        : item.product_variants,
+    })),
+  }));
+
+  return normalizedOrders.filter((order) => order.order_items?.length > 0);
 }
 
 export async function getUserReturnRequests(): Promise<ReturnRequest[]> {
@@ -383,27 +536,4 @@ export async function cancelReturnRequest(returnId: string): Promise<{ success: 
   }
 
   return { success: true };
-}
-
-export function getReturnStatusBadgeColor(status: ReturnStatus): string {
-  switch (status) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'approved':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'rejected':
-      return 'bg-red-100 text-red-800 border-red-200';
-    case 'processing':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'completed':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'cancelled':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-}
-
-export function getReturnStatusLabel(status: ReturnStatus): string {
-  return status.charAt(0).toUpperCase() + status.slice(1);
 }

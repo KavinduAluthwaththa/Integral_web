@@ -15,10 +15,9 @@ import {
   ReturnRequest,
   ReturnItem,
   RefundTransaction,
-  getReturnStatusBadgeColor,
-  getReturnStatusLabel,
 } from '@/lib/returns-service';
-import { PackageOpen, Clock, CircleCheck as CheckCircle2, Circle as XCircle, Package, CircleAlert as AlertCircle } from 'lucide-react';
+import { getReturnStatusBadgeColor, getReturnStatusLabel } from '@/lib/returns/status-ui';
+import { PackageOpen, Clock, CircleCheck as CheckCircle2, Package } from 'lucide-react';
 
 export default function ReturnsPage() {
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
@@ -270,12 +269,10 @@ export default function ReturnsPage() {
           <DialogHeader>
             <DialogTitle>New Return Request</DialogTitle>
             <DialogDescription>
-              Fill out the form below to request a return. You'll need your order ID.
+              Select one of your delivered or shipped orders and choose the items to return.
             </DialogDescription>
           </DialogHeader>
           <ReturnRequestForm
-            orderId="example-order-id"
-            orderNumber="ORD-2024-00001"
             onSuccess={() => {
               setShowNewReturnDialog(false);
               loadReturns();

@@ -1,163 +1,227 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CircleCheck as CheckCircle2, CircleAlert as AlertCircle, Trash2 } from 'lucide-react';
-import { createReturnRequest, RefundMethod } from '@/lib/returns-service';
+import { CircleCheck as CheckCircle2, CircleAlert as AlertCircle } from 'lucide-react';
+import {
+  createReturnRequest,
+  getUserOrdersForReturn,
+  RefundMethod,
+  ReturnableOrder,
+} from '@/lib/returns-service';
 
-interface ReturnItem {
-  productSku: string;
-  productName: string;
-  size: string;
+interface SelectedReturnItemState {
+  selected: boolean;
   quantity: number;
-  price: number;
-  refundAmount: number;
   condition: string;
 }
 
 interface ReturnRequestFormProps {
-  orderId: string;
-  orderNumber: string;
   onSuccess?: () => void;
 }
 
-export function ReturnRequestForm({ orderId, orderNumber, onSuccess }: ReturnRequestFormProps) {
+export function ReturnRequestForm({ onSuccess }: ReturnRequestFormProps) {
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [refundMethod, setRefundMethod] = useState<RefundMethod>('original_payment');
-  const [items, setItems] = useState<ReturnItem[]>([{
-    productSku: '',
-    productName: '',
-    size: '',
-    quantity: 1,
-    price: 0,
-    refundAmount: 0,
-    condition: 'new',
-  }]);
-  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<ReturnableOrder[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [selectedItems, setSelectedItems] = useState<Record<string, SelectedReturnItemState>>({});
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
-  const addItem = () => {
-    setItems([...items, {
-      productSku: '',
-      productName: '',
-      size: '',
-      quantity: 1,
-      price: 0,
-      refundAmount: 0,
-      condition: 'new',
-    }]);
-  };
+  useEffect(() => {
+    const loadOrders = async () => {
+      setLoadingOrders(true);
+      const data = await getUserOrdersForReturn();
+      setOrders(data);
+      if (data.length > 0) {
+        setSelectedOrderId(data[0].id);
+      }
+      setLoadingOrders(false);
+    };
 
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index));
+    void loadOrders();
+  }, []);
+
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.id === selectedOrderId) || null,
+    [orders, selectedOrderId]
+  );
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      setSelectedItems({});
+      return;
     }
-  };
 
-  const updateItem = (index: number, field: keyof ReturnItem, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
+    const initialItems: Record<string, SelectedReturnItemState> = {};
+    selectedOrder.order_items.forEach((item) => {
+      initialItems[item.id] = {
+        selected: false,
+        quantity: 1,
+        condition: 'new',
+      };
+    });
 
-    if (field === 'quantity' || field === 'price') {
-      newItems[index].refundAmount = newItems[index].quantity * newItems[index].price;
-    }
+    setSelectedItems(initialItems);
+  }, [selectedOrder]);
 
-    setItems(newItems);
+  const totalRefundAmount = useMemo(() => {
+    if (!selectedOrder) return 0;
+
+    return selectedOrder.order_items.reduce((sum, orderItem) => {
+      const state = selectedItems[orderItem.id];
+      if (!state?.selected) return sum;
+      return sum + Number(orderItem.price || 0) * state.quantity;
+    }, 0);
+  }, [selectedItems, selectedOrder]);
+
+  const hasSelectedItems = useMemo(
+    () => Object.values(selectedItems).some((item) => item.selected),
+    [selectedItems]
+  );
+
+  const updateSelectedItem = (orderItemId: string, patch: Partial<SelectedReturnItemState>) => {
+    setSelectedItems((current) => ({
+      ...current,
+      [orderItemId]: {
+        ...(current[orderItemId] || { selected: false, quantity: 1, condition: 'new' }),
+        ...patch,
+      },
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!selectedOrder) {
+      setStatus('error');
+      setMessage('Select an order to continue.');
+      return;
+    }
+
     if (!reason.trim()) {
       setStatus('error');
-      setMessage('Please select a return reason');
+      setMessage('Please select a return reason.');
       return;
     }
 
-    const hasEmptyItem = items.some(item =>
-      !item.productSku || !item.productName || !item.size || item.price <= 0
-    );
-
-    if (hasEmptyItem) {
+    if (!hasSelectedItems) {
       setStatus('error');
-      setMessage('Please fill in all item details');
+      setMessage('Select at least one item from your order to return.');
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     setStatus('idle');
     setMessage('');
 
-    try {
-      const result = await createReturnRequest({
-        orderId,
-        reason,
-        description: description.trim() || undefined,
-        refundMethod,
-        items: items.map(item => ({
-          productSku: item.productSku,
-          productName: item.productName,
-          size: item.size,
-          quantity: item.quantity,
-          price: item.price,
-          refundAmount: item.refundAmount,
-          condition: item.condition,
-        })),
-      });
+    const items = selectedOrder.order_items
+      .filter((item) => selectedItems[item.id]?.selected)
+      .map((item) => ({
+        orderItemId: item.id,
+        quantity: selectedItems[item.id].quantity,
+        condition: selectedItems[item.id].condition,
+      }));
 
-      if (result.success) {
-        setStatus('success');
-        setMessage(`Return request ${result.returnRequest?.return_number} created successfully!`);
+    const result = await createReturnRequest({
+      orderId: selectedOrder.id,
+      reason,
+      description: description.trim() || undefined,
+      refundMethod,
+      items,
+    });
 
-        setReason('');
-        setDescription('');
-        setRefundMethod('original_payment');
-        setItems([{
-          productSku: '',
-          productName: '',
-          size: '',
-          quantity: 1,
-          price: 0,
-          refundAmount: 0,
-          condition: 'new',
-        }]);
-
-        if (onSuccess) {
-          setTimeout(() => onSuccess(), 2000);
-        }
-      } else {
-        setStatus('error');
-        setMessage(result.error || 'Failed to create return request');
-      }
-    } catch (error) {
+    if (!result.success) {
       setStatus('error');
-      setMessage('An unexpected error occurred');
-    } finally {
-      setLoading(false);
+      setMessage(result.error || 'Failed to create return request.');
+      setSubmitting(false);
+      return;
+    }
+
+    setStatus('success');
+    setMessage(`Return request ${result.returnRequest?.return_number || ''} created successfully.`);
+
+    setReason('');
+    setDescription('');
+    setRefundMethod('original_payment');
+
+    if (selectedOrder) {
+      const resetItems: Record<string, SelectedReturnItemState> = {};
+      selectedOrder.order_items.forEach((item) => {
+        resetItems[item.id] = {
+          selected: false,
+          quantity: 1,
+          condition: 'new',
+        };
+      });
+      setSelectedItems(resetItems);
+    }
+
+    setSubmitting(false);
+
+    if (onSuccess) {
+      setTimeout(() => onSuccess(), 1200);
     }
   };
 
-  const totalRefund = items.reduce((sum, item) => sum + item.refundAmount, 0);
+  if (loadingOrders) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          Loading your eligible orders...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          No delivered or shipped orders are currently eligible for returns.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Request Return</CardTitle>
-        <CardDescription>Order #{orderNumber}</CardDescription>
+        <CardDescription>Select an order and the items you want to return.</CardDescription>
       </CardHeader>
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
+            <Label htmlFor="order">Order *</Label>
+            <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
+              <SelectTrigger id="order">
+                <SelectValue placeholder="Select an order" />
+              </SelectTrigger>
+              <SelectContent>
+                {orders.map((order) => (
+                  <SelectItem key={order.id} value={order.id}>
+                    {order.order_number} - ${order.total.toFixed(2)} - {new Date(order.created_at).toLocaleDateString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="reason">Return Reason *</Label>
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger>
+              <SelectTrigger id="reason">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent>
@@ -173,20 +237,9 @@ export function ReturnRequestForm({ orderId, orderNumber, onSuccess }: ReturnReq
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Additional Details (Optional)</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide any additional information about your return..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="refundMethod">Refund Method *</Label>
             <Select value={refundMethod} onValueChange={(value) => setRefundMethod(value as RefundMethod)}>
-              <SelectTrigger>
+              <SelectTrigger id="refundMethod">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -197,85 +250,73 @@ export function ReturnRequestForm({ orderId, orderNumber, onSuccess }: ReturnReq
             </Select>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Items to Return *</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                Add Item
-              </Button>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Additional Details (Optional)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Provide any additional context for the return request..."
+              rows={3}
+            />
+          </div>
 
-            {items.map((item, index) => (
-              <Card key={index}>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`sku-${index}`}>Product SKU</Label>
-                          <Input
-                            id={`sku-${index}`}
-                            value={item.productSku}
-                            onChange={(e) => updateItem(index, 'productSku', e.target.value)}
-                            placeholder="e.g., TSH-001"
-                            required
+          {selectedOrder && (
+            <div className="space-y-3">
+              <Label>Order Items *</Label>
+              <div className="space-y-3">
+                {selectedOrder.order_items.map((item) => {
+                  const state = selectedItems[item.id] || { selected: false, quantity: 1, condition: 'new' };
+
+                  return (
+                    <div key={item.id} className="border border-foreground/10 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <label className="flex items-start gap-3 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={state.selected}
+                            onChange={(e) => updateSelectedItem(item.id, { selected: e.target.checked })}
+                            className="mt-1"
                           />
-                        </div>
+                          <span>
+                            <span className="block font-medium">{item.products?.name || 'Unknown product'}</span>
+                            <span className="block text-muted-foreground text-xs">
+                              {item.products?.sku || 'SKU unavailable'} / Size {item.product_variants?.size || 'N/A'}
+                            </span>
+                          </span>
+                        </label>
+                        <span className="text-sm text-muted-foreground">
+                          ${Number(item.price || 0).toFixed(2)} each
+                        </span>
+                      </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor={`name-${index}`}>Product Name</Label>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor={`qty-${item.id}`}>Quantity to Return</Label>
                           <Input
-                            id={`name-${index}`}
-                            value={item.productName}
-                            onChange={(e) => updateItem(index, 'productName', e.target.value)}
-                            placeholder="e.g., Classic White T-Shirt"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`size-${index}`}>Size</Label>
-                          <Input
-                            id={`size-${index}`}
-                            value={item.size}
-                            onChange={(e) => updateItem(index, 'size', e.target.value)}
-                            placeholder="e.g., M"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`quantity-${index}`}>Quantity</Label>
-                          <Input
-                            id={`quantity-${index}`}
+                            id={`qty-${item.id}`}
                             type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                            required
+                            min={1}
+                            max={item.quantity}
+                            disabled={!state.selected}
+                            value={state.quantity}
+                            onChange={(e) => {
+                              const parsed = Number.parseInt(e.target.value, 10) || 1;
+                              const bounded = Math.min(Math.max(parsed, 1), item.quantity);
+                              updateSelectedItem(item.id, { quantity: bounded });
+                            }}
                           />
+                          <p className="text-xs text-muted-foreground">Purchased qty: {item.quantity}</p>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor={`price-${index}`}>Price per Item</Label>
-                          <Input
-                            id={`price-${index}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.price}
-                            onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`condition-${index}`}>Condition</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor={`condition-${item.id}`}>Condition</Label>
                           <Select
-                            value={item.condition}
-                            onValueChange={(value) => updateItem(index, 'condition', value)}
+                            value={state.condition}
+                            onValueChange={(value) => updateSelectedItem(item.id, { condition: value })}
+                            disabled={!state.selected}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id={`condition-${item.id}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -286,48 +327,32 @@ export function ReturnRequestForm({ orderId, orderNumber, onSuccess }: ReturnReq
                           </Select>
                         </div>
                       </div>
-
-                      {items.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(index)}
-                          className="shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-                    <div className="text-sm text-muted-foreground">
-                      Refund Amount: <span className="font-medium text-foreground">${item.refundAmount.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+            <span className="font-medium">Estimated Refund</span>
+            <span className="text-lg font-semibold">${totalRefundAmount.toFixed(2)}</span>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <span className="font-medium">Total Refund Amount:</span>
-            <span className="text-lg font-semibold">${totalRefund.toFixed(2)}</span>
-          </div>
-
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Submitting...' : 'Submit Return Request'}
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? 'Submitting...' : 'Submit Return Request'}
           </Button>
 
           {status === 'success' && (
-            <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded text-green-800">
-              <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded border border-green-200 bg-green-50 p-3 text-green-800">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
               <p className="text-sm">{message}</p>
             </div>
           )}
 
           {status === 'error' && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded text-red-800">
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded border border-red-200 bg-red-50 p-3 text-red-800">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
               <p className="text-sm">{message}</p>
             </div>
           )}
