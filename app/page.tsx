@@ -15,6 +15,8 @@ import { useHomeCatalog } from '@/hooks/catalog/use-home-catalog';
 
 
 export default function Home() {
+  const heroYouTubeEmbedUrl = 'https://www.youtube.com/embed/CHSnz0bCaUk?autoplay=1&mute=1&loop=1&playlist=CHSnz0bCaUk&controls=0&rel=0&modestbranding=1&playsinline=1&vq=hd720';
+
   const { itemCount } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -38,12 +40,24 @@ export default function Home() {
       <main className="bg-background">
         {/* Hero Section */}
         <section className="relative min-h-screen flex items-center justify-center bg-background" aria-label="Hero section">
+          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+            <iframe
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[140vh] w-[250vw] min-h-[900px] min-w-[1600px] -translate-x-1/2 -translate-y-1/2"
+              src={heroYouTubeEmbedUrl}
+              title="Hero background video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              tabIndex={-1}
+            />
+          </div>
           <div className="absolute inset-0 bg-secondary/30" aria-hidden="true" />
           <div className="relative z-10 container mx-auto px-md text-center space-y-xl py-4xl">
             <h1 className="sr-only">Integral</h1>
-            <div className="mx-auto w-full max-w-[560px] md:max-w-[760px] lg:max-w-[920px]">
+            <div className="mx-auto w-full max-w-[720px] md:max-w-[940px] lg:max-w-[1120px]">
               <div
-                className="h-[120px] w-full bg-foreground md:h-[160px] lg:h-[200px]"
+                className="h-[150px] w-full bg-white md:h-[210px] lg:h-[270px]"
                 style={{
                   WebkitMaskImage: "url('/brand/logo/logo.svg')",
                   maskImage: "url('/brand/logo/logo.svg')",
@@ -57,7 +71,13 @@ export default function Home() {
                 aria-hidden="true"
               />
             </div>
-            <Button variant="default" size="lg" className="group" aria-label="Visit shop" asChild>
+            <Button
+              variant="outline"
+              size="lg"
+              className="group border-white text-white hover:bg-white hover:text-foreground"
+              aria-label="Visit shop"
+              asChild
+            >
               <a href="/shop">
                 Visit Shop
                 <ArrowRight className="ml-sm transition-transform group-hover:translate-x-1" size={20} aria-hidden="true" />
