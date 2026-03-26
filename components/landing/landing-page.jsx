@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useMemo, useRef } from "react";
+import Image from "next/image";
 import { ReactLenis as Lenis } from "lenis/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -168,7 +169,7 @@ export default function LandingLandingPage() {
               Every Stitch Weaves a Story. <br />
               Fashion Was Never Meant to Follow Rules, <br />
               But to Break Them. <br />
-              It's Freedom.
+              It&apos;s Freedom.
             </h3>
           </div>
         </section>
@@ -184,7 +185,7 @@ export default function LandingLandingPage() {
             >
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div className={styles.landingAboutImgsColItem} key={`c1-${idx}`}>
-                  <img
+                  <Image
                     src={
                       [
                         "/landing/artist.png",
@@ -194,6 +195,9 @@ export default function LandingLandingPage() {
                       ][idx % 4]
                     }
                     alt={`About Image ${idx + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 65px, 150px"
+                    className={styles.landingAboutImg}
                   />
                 </div>
               ))}
@@ -204,7 +208,7 @@ export default function LandingLandingPage() {
             >
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div className={styles.landingAboutImgsColItem} key={`c2-${idx}`}>
-                  <img
+                  <Image
                     src={
                       [
                         "/landing/skate.png",
@@ -214,6 +218,9 @@ export default function LandingLandingPage() {
                       ][idx % 4]
                     }
                     alt={`About Image ${idx + 5}`}
+                    fill
+                    sizes="(max-width: 768px) 65px, 150px"
+                    className={styles.landingAboutImg}
                   />
                 </div>
               ))}
@@ -224,7 +231,7 @@ export default function LandingLandingPage() {
             >
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div className={styles.landingAboutImgsColItem} key={`c3-${idx}`}>
-                  <img
+                  <Image
                     src={
                       [
                         "/landing/football.png",
@@ -234,6 +241,9 @@ export default function LandingLandingPage() {
                       ][idx % 4]
                     }
                     alt={`About Image ${idx + 9}`}
+                    fill
+                    sizes="(max-width: 768px) 65px, 150px"
+                    className={styles.landingAboutImg}
                   />
                 </div>
               ))}
@@ -244,7 +254,7 @@ export default function LandingLandingPage() {
             >
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div className={styles.landingAboutImgsColItem} key={`c4-${idx}`}>
-                  <img
+                  <Image
                     src={
                       [
                         "/landing/worker.png",
@@ -254,6 +264,9 @@ export default function LandingLandingPage() {
                       ][idx % 4]
                     }
                     alt={`About Image ${idx + 13}`}
+                    fill
+                    sizes="(max-width: 768px) 65px, 150px"
+                    className={styles.landingAboutImg}
                   />
                 </div>
               ))}

@@ -23,6 +23,7 @@
     "check:security": "npm run lint && npm run typecheck && npm run test:security && npm run test:e2e:security && npm run security:audit"
   },
   "dependencies": {
+    "@fontsource/space-mono": "^5.2.9",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^3.9.0",
     "@netlify/plugin-nextjs": "^5.15.1",

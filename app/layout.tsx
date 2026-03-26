@@ -1,19 +1,13 @@
 import './globals.css';
+import '@fontsource/space-mono/400.css';
+import '@fontsource/space-mono/700.css';
 import type { Metadata } from 'next';
-import { Space_Mono } from 'next/font/google';
 import { CartProvider } from '@/lib/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { CurrencyProvider } from '@/lib/currency-context-geo';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
 import { Footer } from '@/components/navigation/footer';
-
-const spaceMono = Space_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-  weight: ['400', '700'],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://streetwear.example.com'),
@@ -82,7 +76,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className={spaceMono.className}>
+      <body>
         <AuthProvider>
           <CurrencyProvider>
             <CartProvider>

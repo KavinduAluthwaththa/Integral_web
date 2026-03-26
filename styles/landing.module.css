@@ -111,13 +111,14 @@
 }
 
 .landingAboutImgsColItem {
+  position: relative;
   width: 150px;
   height: 165px;
   border-radius: 0;
   overflow: hidden;
 }
 
-.landingAboutImgsColItem img {
+.landingAboutImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -218,7 +219,7 @@
     filter: saturate(0);
   }
 
-  .landingAboutImgsColItem img {
+  .landingAboutImg {
     transform: scale(1.2);
   }
 
@@ -304,7 +305,7 @@
     filter: saturate(0.3);
   }
 
-  .landingAboutImgsColItem img {
+  .landingAboutImg {
     transform: scale(1.15);
   }
 
