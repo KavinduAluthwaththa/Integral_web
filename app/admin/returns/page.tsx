@@ -195,7 +195,7 @@ export default function AdminReturnsPage() {
   const approvedReturns = returns.filter(r => r.status === 'approved');
   const processingReturns = returns.filter(r => r.status === 'processing');
   const completedReturns = returns.filter(r => ['completed', 'rejected', 'cancelled'].includes(r.status));
-  const adminCardClasses = 'rounded-none border-2 border-foreground shadow-none';
+  const adminCardClasses = 'rounded-none border-2 border-foreground/40 shadow-none';
 
   if (checkingAdmin) {
     return (
@@ -274,10 +274,10 @@ export default function AdminReturnsPage() {
 
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'pending' | 'approved' | 'processing' | 'completed' | 'all')} className="space-y-4">
             <Select value={activeTab} onValueChange={(value) => setActiveTab(value as 'pending' | 'approved' | 'processing' | 'completed' | 'all')}>
-              <SelectTrigger className="h-10 w-full rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="h-10 w-full rounded-none border-2 border-foreground/40 bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Filter returns" className="uppercase tracking-[0.12em]" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+              <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
                 <SelectItem value="pending" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Pending ({pendingReturns.length})</SelectItem>
                 <SelectItem value="approved" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Approved ({approvedReturns.length})</SelectItem>
                 <SelectItem value="processing" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">Processing ({processingReturns.length})</SelectItem>
@@ -365,7 +365,7 @@ export default function AdminReturnsPage() {
 
       {selectedReturn && (
         <Dialog open={!!selectedReturn} onOpenChange={() => setSelectedReturn(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none border-2 border-foreground">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none border-2 border-foreground/40">
             <DialogHeader>
               <DialogTitle className="text-base font-light tracking-wide">{selectedReturn.return_number}</DialogTitle>
               <DialogDescription>Return request management</DialogDescription>
@@ -509,7 +509,7 @@ export default function AdminReturnsPage() {
       )}
 
       <Dialog open={actionDialog === 'approve'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent className="rounded-none border-2 border-foreground">
+        <DialogContent className="rounded-none border-2 border-foreground/40">
           <DialogHeader>
             <DialogTitle>Approve Return Request</DialogTitle>
             <DialogDescription>Approve this return and allow processing to begin.</DialogDescription>
@@ -534,7 +534,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'reject'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent className="rounded-none border-2 border-foreground">
+        <DialogContent className="rounded-none border-2 border-foreground/40">
           <DialogHeader>
             <DialogTitle>Reject Return Request</DialogTitle>
             <DialogDescription>Please provide a reason for rejecting this return.</DialogDescription>
@@ -560,7 +560,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'status'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent className="rounded-none border-2 border-foreground">
+        <DialogContent className="rounded-none border-2 border-foreground/40">
           <DialogHeader>
             <DialogTitle>Update Return Status</DialogTitle>
             <DialogDescription>Change the status of this return request.</DialogDescription>
@@ -569,10 +569,10 @@ export default function AdminReturnsPage() {
             <div>
               <Label htmlFor="new-status">New Status</Label>
               <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReturnStatus)}>
-                <SelectTrigger className="h-10 rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
+                <SelectTrigger className="h-10 rounded-none border-2 border-foreground/40 bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+                <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -598,7 +598,7 @@ export default function AdminReturnsPage() {
       </Dialog>
 
       <Dialog open={actionDialog === 'refund'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent className="rounded-none border-2 border-foreground">
+        <DialogContent className="rounded-none border-2 border-foreground/40">
           <DialogHeader>
             <DialogTitle>Process Refund</DialogTitle>
             <DialogDescription>Create a refund transaction for this return.</DialogDescription>
@@ -607,10 +607,10 @@ export default function AdminReturnsPage() {
             <div>
               <Label htmlFor="refund-type">Transaction Type</Label>
               <Select value={refundType} onValueChange={(value) => setRefundType(value as TransactionType)}>
-                <SelectTrigger className="h-10 rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
+                <SelectTrigger className="h-10 rounded-none border-2 border-foreground/40 bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+                <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
                   <SelectItem value="refund">Refund</SelectItem>
                   <SelectItem value="store_credit">Store Credit</SelectItem>
                   <SelectItem value="exchange">Exchange</SelectItem>

@@ -169,22 +169,22 @@ export default function AdminDashboard() {
           </div>
 
           <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Link href="/admin/products" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+            <Link href="/admin/products" className="border-2 border-foreground/40 p-lg transition-colors hover:bg-foreground hover:text-background">
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Catalog</p>
               <h2 className="mt-2 text-xl font-light tracking-wide">Manage Products</h2>
               <p className="mt-2 text-sm text-muted-foreground">Create products, edit merchandising details, and update variant stock.</p>
             </Link>
-            <Link href="/admin/orders" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+            <Link href="/admin/orders" className="border-2 border-foreground/40 p-lg transition-colors hover:bg-foreground hover:text-background">
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Fulfillment</p>
               <h2 className="mt-2 text-xl font-light tracking-wide">Manage Orders</h2>
               <p className="mt-2 text-sm text-muted-foreground">Review live orders, shipping details, and fulfillment statuses.</p>
             </Link>
-            <Link href="/admin/returns" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background">
+            <Link href="/admin/returns" className="border-2 border-foreground/40 p-lg transition-colors hover:bg-foreground hover:text-background">
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Aftercare</p>
               <h2 className="mt-2 text-xl font-light tracking-wide">Manage Returns</h2>
               <p className="mt-2 text-sm text-muted-foreground">Approve, reject, and process return workflows.</p>
             </Link>
-            <Link href="/admin/payments" className="border-2 border-foreground p-lg transition-colors hover:bg-foreground hover:text-background flex items-start gap-3">
+            <Link href="/admin/payments" className="border-2 border-foreground/40 p-lg transition-colors hover:bg-foreground hover:text-background flex items-start gap-3">
               <ShieldAlert className="h-5 w-5 mt-0.5" />
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Payments</p>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
           <section>
             <h2 className="text-xl font-light tracking-wide mb-4">Sales Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Total Orders</CardTitle>
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Avg Order Value</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="font-display text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Conversion Rate</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
@@ -282,7 +282,7 @@ export default function AdminDashboard() {
             </div>
 
             {salesOverview && salesOverview.revenueByDay.length > 0 && (
-              <Card className="mt-4 rounded-none border-2 border-foreground shadow-none">
+              <Card className="mt-4 rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader>
                   <CardTitle className="text-base font-light tracking-wide">Revenue Trend</CardTitle>
                   <CardDescription>Daily revenue and order breakdown</CardDescription>
@@ -313,7 +313,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Hot Products</h2>
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader>
                   <CardTitle className="text-base font-light tracking-wide">Top Performing Products</CardTitle>
                   <CardDescription>Based on revenue and sales volume</CardDescription>
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
                           key={product.id}
                           className="flex items-center gap-4 pb-4 border-b last:border-0"
                         >
-                          <div className="flex items-center justify-center w-8 h-8 border-2 border-foreground text-sm font-light shrink-0">
+                          <div className="flex items-center justify-center w-8 h-8 border-2 border-foreground/40 text-sm font-light shrink-0">
                             #{index + 1}
                           </div>
                           <div className="relative w-16 h-16 bg-muted rounded shrink-0">
@@ -371,7 +371,7 @@ export default function AdminDashboard() {
 
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Inventory Levels</h2>
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader>
                   <CardTitle className="text-base font-light tracking-wide">Stock Status</CardTitle>
                   <CardDescription>Current inventory across all variants</CardDescription>
@@ -426,7 +426,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">User Retention</h2>
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader>
                   <CardTitle className="text-base font-light tracking-wide">User Activity</CardTitle>
                   <CardDescription>New vs returning user breakdown</CardDescription>
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
 
             <section>
               <h2 className="text-xl font-light tracking-wide mb-4">Traffic Sources</h2>
-              <Card className="rounded-none border-2 border-foreground shadow-none">
+              <Card className="rounded-none border-2 border-foreground/40 shadow-none">
                 <CardHeader>
                   <CardTitle className="text-base font-light tracking-wide">Visitor Origins</CardTitle>
                   <CardDescription>Where your traffic comes from</CardDescription>
@@ -544,7 +544,7 @@ export default function AdminDashboard() {
 
           <section>
             <h2 className="text-xl font-light tracking-wide mb-4">Recommendation Performance</h2>
-            <Card className="rounded-none border-2 border-foreground shadow-none">
+            <Card className="rounded-none border-2 border-foreground/40 shadow-none">
               <CardHeader>
                 <CardTitle className="text-base font-light tracking-wide">Attributed Sales</CardTitle>
                 <CardDescription>How recommendation clicks translate into carts and orders</CardDescription>

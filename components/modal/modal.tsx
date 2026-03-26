@@ -52,7 +52,7 @@ export function Modal({
   return (
     <dialog
       ref={dialogRef}
-      className="backdrop:bg-black/50 backdrop:backdrop-blur-sm p-0 rounded-none border-2 border-foreground"
+      className="backdrop:bg-black/50 backdrop:backdrop-blur-sm p-0 rounded-none border-2 border-foreground/40"
       onClose={onClose}
     >
       <div className={cn('bg-background', sizeClasses[size], className)}>

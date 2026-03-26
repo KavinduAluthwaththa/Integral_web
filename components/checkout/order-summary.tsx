@@ -15,7 +15,7 @@ export function OrderSummary({ shippingCost = 0, tax = 0 }: OrderSummaryProps) {
   const total = subtotal - discount + shippingCost + tax;
 
   return (
-    <div className="border-2 border-foreground bg-background">
+    <div className="border-2 border-foreground/40 bg-background">
       <div className="border-b border-foreground/10 px-xl py-lg">
         <p className="font-display text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
           Order Summary
@@ -27,7 +27,7 @@ export function OrderSummary({ shippingCost = 0, tax = 0 }: OrderSummaryProps) {
         <div className="space-y-lg">
           {items.map((item) => (
             <div key={item.variant_id} className="flex gap-md border-b border-foreground/10 pb-lg last:border-b-0 last:pb-0">
-              <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden border-2 border-foreground bg-secondary">
+              <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden border-2 border-foreground/40 bg-secondary">
                 <Image
                   src={item.image}
                   alt={item.name}
@@ -51,7 +51,7 @@ export function OrderSummary({ shippingCost = 0, tax = 0 }: OrderSummaryProps) {
           ))}
         </div>
 
-        <div className="border-2 border-foreground px-md py-md">
+        <div className="border-2 border-foreground/40 px-md py-md">
           <p className="font-display text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             Delivery
           </p>

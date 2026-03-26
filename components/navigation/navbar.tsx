@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Heart,
   Menu,
+  ShoppingBag,
   X,
 } from 'lucide-react';
 import { CartIcon } from '@/components/icons/cart-icon';
@@ -32,7 +33,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
 
   return (
     <nav className="w-full bg-background sticky top-0 z-50" aria-label="Main navigation">
-      <div className="hidden md:block h-12 w-full border-b-2 border-foreground">
+      <div className="hidden md:block h-12 w-full border-b-2 border-foreground/40">
         <div className="relative h-full w-full">
           <div className="absolute left-0 top-0 flex h-full">
           {socialLinks.map((link) => {
@@ -42,7 +43,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
                 href={link.href}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex h-12 w-12 items-center justify-center border-r-2 border-foreground text-foreground/75 transition-colors duration-300 hover:bg-foreground"
+                className="group flex h-12 w-12 items-center justify-center border-r-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
                 aria-label={link.label}
               >
                 {link.label === 'YouTube' ? (
@@ -89,13 +90,21 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           </Link>
 
           <div className="absolute right-0 top-0 flex h-full">
-          <div className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground text-foreground/75 transition-colors duration-300 hover:bg-foreground">
+          <div className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground">
             <CartIcon count={cartCount} onClick={onCartClick} className="group text-inherit transition-colors duration-300 hover:opacity-100" />
           </div>
 
           <Link
+            href="/shop"
+            className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
+            aria-label="Shop"
+          >
+            <ShoppingBag size={20} strokeWidth={1.5} className="transition-colors duration-300 group-hover:text-background" />
+          </Link>
+
+          <Link
             href="/dashboard/favorites"
-            className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground text-foreground/75 transition-colors duration-300 hover:bg-foreground"
+            className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
             aria-label="Favorites"
           >
             <Heart size={20} strokeWidth={1.5} className="transition-colors duration-300 group-hover:text-background" />
@@ -103,7 +112,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
 
           <Link
             href={accountLink.href}
-            className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground text-foreground/75 transition-colors duration-300 hover:bg-foreground"
+            className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
             aria-label={accountLink.label}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true" className="transition-colors duration-300 group-hover:text-background">
@@ -114,7 +123,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
         </div>
       </div>
 
-      <div className="md:hidden h-14 border-b-2 border-foreground px-md flex items-center justify-between">
+      <div className="md:hidden h-14 border-b-2 border-foreground/40 px-md flex items-center justify-between">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="text-foreground/75 hover:text-foreground transition-colors"
@@ -144,6 +153,13 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
 
         <div className="flex items-center gap-sm">
           <Link
+            href="/shop"
+            className="text-foreground/75 hover:text-foreground transition-colors"
+            aria-label="Shop"
+          >
+            <ShoppingBag size={20} strokeWidth={1.5} />
+          </Link>
+          <Link
             href="/dashboard/favorites"
             className="text-foreground/75 hover:text-foreground transition-colors"
             aria-label="Favorites"
@@ -155,7 +171,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
       </div>
 
       {isOpen && (
-        <div id="mobile-menu" className="md:hidden border-t-2 border-foreground bg-background animate-fade-in" role="navigation" aria-label="Mobile navigation">
+        <div id="mobile-menu" className="md:hidden border-t-2 border-foreground/40 bg-background animate-fade-in" role="navigation" aria-label="Mobile navigation">
           <div className="container mx-auto px-lg py-lg flex flex-col gap-md">
             <Link
               href="/shop"

@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
               className={`px-4 py-2 text-sm border transition-colors ${
                 dateRange === 7
                   ? 'bg-foreground text-background'
-                  : 'border-foreground/20 hover:border-foreground'
+                  : 'border-foreground/20 hover:border-foreground/40'
               }`}
             >
               7 Days
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
               className={`px-4 py-2 text-sm border transition-colors ${
                 dateRange === 30
                   ? 'bg-foreground text-background'
-                  : 'border-foreground/20 hover:border-foreground'
+                  : 'border-foreground/20 hover:border-foreground/40'
               }`}
             >
               30 Days
@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
               className={`px-4 py-2 text-sm border transition-colors ${
                 dateRange === 90
                   ? 'bg-foreground text-background'
-                  : 'border-foreground/20 hover:border-foreground'
+                  : 'border-foreground/20 hover:border-foreground/40'
               }`}
             >
               90 Days

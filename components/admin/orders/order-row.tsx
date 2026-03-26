@@ -55,10 +55,10 @@ export function OrderRow({
             onValueChange={(value) => onUpdateDraft(order.id, { status: value })}
             disabled={updatingOrderId === order.id}
           >
-            <SelectTrigger className="h-10 w-full rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 md:min-w-[180px]">
+            <SelectTrigger className="h-10 w-full rounded-none border-2 border-foreground/40 bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 md:min-w-[180px]">
               <SelectValue placeholder="Status" className="uppercase tracking-[0.12em]" />
             </SelectTrigger>
-            <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+            <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
               {allowedStatuses.map((status) => (
                 <SelectItem key={status} value={status} className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">
                   {status}
@@ -69,7 +69,7 @@ export function OrderRow({
           <button
             onClick={() => onSave(order.id, draft.status)}
             disabled={updatingOrderId === order.id}
-            className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+            className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground/40 px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
           >
             {updatingOrderId === order.id ? 'Saving...' : 'Save Actions'}
           </button>
@@ -110,7 +110,7 @@ export function OrderRow({
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Items</p>
-          <div className="space-y-2 border-2 border-foreground p-md">
+          <div className="space-y-2 border-2 border-foreground/40 p-md">
             {order.order_items.map((item) => (
               <div key={item.id} className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div>
@@ -129,7 +129,7 @@ export function OrderRow({
 
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Shipping</p>
-          <div className="border-2 border-foreground p-md text-sm text-muted-foreground">
+          <div className="border-2 border-foreground/40 p-md text-sm text-muted-foreground">
             {shipping ? (
               <>
                 <p className="text-foreground">{shipping.full_name}</p>

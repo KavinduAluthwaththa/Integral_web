@@ -29,7 +29,7 @@ export function CurrencySelector() {
         <SelectTrigger className="w-[140px] rounded-none border-2 border-foreground/20 bg-background text-foreground focus:border-foreground focus:outline-none">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+        <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
           {Object.entries(SUPPORTED_CURRENCIES).map(([code, info]) => (
             <SelectItem
               key={code}

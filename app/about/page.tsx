@@ -39,7 +39,7 @@ export default function AboutPage() {
                 Color stories stay neutral and seasonless so you can mix across drops. We iterate fast, but only ship when the pattern, fabric, and finish are right.
               </p>
             </div>
-            <div className="relative aspect-[4/5] overflow-hidden border-2 border-foreground bg-secondary">
+            <div className="relative aspect-[4/5] overflow-hidden border-2 border-foreground/40 bg-secondary">
               <Image
                 src="https://images.pexels.com/photos/1544724/pexels-photo-1544724.jpeg?auto=compress&cs=tinysrgb&w=1200"
                 alt="Garment detail"
@@ -54,7 +54,7 @@ export default function AboutPage() {
 
         <section className="py-3xl">
           <div className="container mx-auto px-md grid gap-2xl lg:grid-cols-2 lg:items-center max-w-5xl">
-            <div className="relative aspect-[4/5] overflow-hidden border-2 border-foreground bg-secondary order-last lg:order-first">
+            <div className="relative aspect-[4/5] overflow-hidden border-2 border-foreground/40 bg-secondary order-last lg:order-first">
               <Image
                 src="https://images.pexels.com/photos/3760852/pexels-photo-3760852.jpeg?auto=compress&cs=tinysrgb&w=1200"
                 alt="Studio"
