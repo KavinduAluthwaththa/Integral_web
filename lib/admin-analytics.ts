@@ -257,19 +257,22 @@ export async function getUserRetention(startDate?: Date, endDate?: Date): Promis
 
   const { data: allSessions } = await supabase
     .from('session_analytics')
-    .select('session_id, user_id, is_returning, created_at')
+    .select('session_id, user_id, visitor_id, is_returning, created_at')
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
 
-  const uniqueUsers = new Set();
+  const uniqueUsers = new Set<string>();
   let newUsers = 0;
   let returningUsers = 0;
   const usersByDay: Record<string, { new: number; returning: number }> = {};
 
   allSessions?.forEach((session) => {
-    if (session.user_id) {
-      uniqueUsers.add(session.user_id);
-    }
+    const identityId = session.user_id
+      ? `user:${session.user_id}`
+      : session.visitor_id
+        ? `visitor:${session.visitor_id}`
+        : `session:${session.session_id}`;
+    uniqueUsers.add(identityId);
 
     if (session.is_returning) {
       returningUsers += 1;
@@ -289,7 +292,7 @@ export async function getUserRetention(startDate?: Date, endDate?: Date): Promis
   });
 
   const totalSessions = allSessions?.length || 0;
-  const totalUsers = uniqueUsers.size || totalSessions;
+  const totalUsers = uniqueUsers.size;
   const retentionRate = totalSessions > 0 ? (returningUsers / totalSessions) * 100 : 0;
   const avgSessionsPerUser = totalUsers > 0 ? totalSessions / totalUsers : 0;
 
@@ -324,13 +327,13 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
 
   const { data: sessions } = await supabase
     .from('session_analytics')
-    .select('session_id, user_id')
+    .select('session_id, user_id, visitor_id')
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
 
   const sourceStats: Record<string, {
     sessionIds: Set<string>;
-    userIds: Set<string>;
+    identityIds: Set<string>;
     orders: number;
     revenue: number
   }> = {};
@@ -340,7 +343,7 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
     if (!sourceStats[traffic.source]) {
       sourceStats[traffic.source] = {
         sessionIds: new Set(),
-        userIds: new Set(),
+        identityIds: new Set(),
         orders: 0,
         revenue: 0,
       };
@@ -353,9 +356,12 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
     const source = sourceBySessionId.get(session.session_id);
     if (!source) return;
 
-    if (session.user_id) {
-      sourceStats[source].userIds.add(session.user_id);
-    }
+    const identityId = session.user_id
+      ? `user:${session.user_id}`
+      : session.visitor_id
+        ? `visitor:${session.visitor_id}`
+        : `session:${session.session_id}`;
+    sourceStats[source].identityIds.add(identityId);
   });
 
   orders?.forEach((order) => {
@@ -370,7 +376,7 @@ export async function getTrafficSources(startDate?: Date, endDate?: Date): Promi
 
   const trafficSources: TrafficSource[] = Object.entries(sourceStats).map(([source, stats]) => {
     const sessions = stats.sessionIds.size;
-    const users = stats.userIds.size;
+    const users = stats.identityIds.size;
     const conversionRate = sessions > 0 ? (stats.orders / sessions) * 100 : 0;
     const percentage = totalSessions > 0 ? (sessions / totalSessions) * 100 : 0;
 

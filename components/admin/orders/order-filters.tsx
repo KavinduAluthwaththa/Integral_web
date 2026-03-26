@@ -36,10 +36,10 @@ export function OrderFilters({
           className="w-full md:w-72"
         />
         <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="h-10 w-full md:w-44 rounded-none border-2 border-foreground bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
+          <SelectTrigger className="h-10 w-full md:w-44 rounded-none border-2 border-foreground/40 bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
             <SelectValue placeholder="All statuses" className="uppercase tracking-[0.12em]" />
           </SelectTrigger>
-          <SelectContent className="rounded-none border-2 border-foreground bg-background text-foreground">
+          <SelectContent className="rounded-none border-2 border-foreground/40 bg-background text-foreground">
             <SelectItem value="all" className="rounded-none focus:bg-foreground focus:text-background uppercase tracking-[0.12em]">
               All statuses
             </SelectItem>

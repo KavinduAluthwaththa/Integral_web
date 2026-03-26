@@ -10,7 +10,7 @@ interface ReturnRequestCardProps {
 }
 
 export function ReturnRequestCard({ returnRequest, onView }: ReturnRequestCardProps) {
-  const adminCardClasses = 'rounded-none border-2 border-foreground shadow-none';
+  const adminCardClasses = 'rounded-none border-2 border-foreground/40 shadow-none';
 
   return (
     <Card className={adminCardClasses}>

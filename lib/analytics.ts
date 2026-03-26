@@ -11,6 +11,18 @@ export function getSessionId(): string {
   return sessionId;
 }
 
+export function getVisitorId(): string {
+  if (typeof window === 'undefined') return '';
+
+  let visitorId = localStorage.getItem('analytics_visitor_id');
+  if (!visitorId) {
+    visitorId = `visitor_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    localStorage.setItem('analytics_visitor_id', visitorId);
+  }
+
+  return visitorId;
+}
+
 export function getUTMParams() {
   if (typeof window === 'undefined') return {};
 
@@ -26,6 +38,7 @@ export async function trackTrafficSource() {
   if (typeof window === 'undefined') return;
 
   const sessionId = getSessionId();
+  const visitorId = getVisitorId();
 
   const { data: existing } = await supabase
     .from('traffic_sources')
@@ -46,6 +59,7 @@ export async function trackTrafficSource() {
 
   await supabase.from('traffic_sources').insert({
     session_id: sessionId,
+    visitor_id: visitorId,
     source: sourceData || 'direct',
     utm_source: utmParams.utm_source || null,
     utm_medium: utmParams.utm_medium || null,
@@ -59,6 +73,7 @@ export async function trackSession(userId?: string) {
   if (typeof window === 'undefined') return;
 
   const sessionId = getSessionId();
+  const visitorId = getVisitorId();
 
   const isReturning = localStorage.getItem('has_visited') === 'true';
 
@@ -79,12 +94,14 @@ export async function trackSession(userId?: string) {
         last_activity: new Date().toISOString(),
         page_views: supabase.rpc('increment', { x: 1 }),
         user_id: userId || null,
+        visitor_id: visitorId,
       })
       .eq('session_id', sessionId);
   } else {
     await supabase.from('session_analytics').insert({
       session_id: sessionId,
       user_id: userId || null,
+      visitor_id: visitorId,
       is_returning: isReturning,
       page_views: 1,
     });

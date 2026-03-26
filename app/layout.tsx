@@ -1,17 +1,13 @@
 import './globals.css';
+import '@fontsource/space-mono/400.css';
+import '@fontsource/space-mono/700.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { CartProvider } from '@/lib/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { CurrencyProvider } from '@/lib/currency-context-geo';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-});
+import { Footer } from '@/components/navigation/footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://streetwear.example.com'),
@@ -79,13 +75,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body>
         <AuthProvider>
           <CurrencyProvider>
             <CartProvider>
               <AnalyticsTracker />
               {children}
+              <Footer />
               <Toaster />
             </CartProvider>
           </CurrencyProvider>

@@ -23,7 +23,7 @@ export default function NewsletterPage() {
             </div>
 
             <div className="mt-10 flex justify-center">
-              <div className="w-full max-w-lg border-2 border-foreground bg-secondary p-lg shadow-sm">
+              <div className="w-full max-w-lg border-2 border-foreground/40 bg-secondary p-lg shadow-sm">
                 <NewsletterSignup />
               </div>
             </div>

@@ -9,7 +9,7 @@ interface CatalogListProps {
 
 export function CatalogList({ loading, products, onEdit, onDelete }: CatalogListProps) {
   return (
-    <section className="border-2 border-foreground">
+    <section className="border-2 border-foreground/40">
       <div className="border-b-2 border-foreground px-lg py-md">
         <h2 className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Catalog</h2>
       </div>
@@ -36,7 +36,7 @@ export function CatalogList({ loading, products, onEdit, onDelete }: CatalogList
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => onEdit(product)} className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto">
+                <button onClick={() => onEdit(product)} className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground/40 px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto">
                   Edit
                 </button>
                 <button onClick={() => onDelete(product)} className="inline-flex h-10 w-full items-center justify-center border-2 border-red-600/40 px-4 text-xs uppercase tracking-[0.2em] text-red-700 transition-colors duration-300 hover:bg-red-600 hover:text-background sm:w-auto">

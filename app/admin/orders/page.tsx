@@ -168,7 +168,7 @@ export default function AdminOrdersPage() {
           {message && <div className="border-2 border-green-600/30 bg-green-600/10 px-4 py-3 text-sm text-green-700">{message}</div>}
           {errorMessage && <div className="border-2 border-red-600/30 bg-red-600/10 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
 
-          <section className="border-2 border-foreground">
+          <section className="border-2 border-foreground/40">
             <div className="border-b-2 border-foreground px-lg py-md">
               <h2 className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Orders</h2>
             </div>

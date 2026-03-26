@@ -333,7 +333,7 @@ export default function CheckoutPage() {
           <div className="max-w-2xl mx-auto px-xl">
             <div className="space-y-2xl text-center">
               <div className="flex justify-center">
-                <div className="flex h-20 w-20 items-center justify-center border-2 border-foreground bg-foreground text-background">
+                <div className="flex h-20 w-20 items-center justify-center border-2 border-foreground/40 bg-foreground text-background">
                   <Check size={36} strokeWidth={1.5} />
                 </div>
               </div>
@@ -349,7 +349,7 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              <div className="border-2 border-foreground bg-background p-xl text-left">
+              <div className="border-2 border-foreground/40 bg-background p-xl text-left">
                 <div className="space-y-sm border-b border-foreground/10 pb-lg text-center">
                   <p className="font-display text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
                     Order Number
@@ -446,7 +446,7 @@ export default function CheckoutPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-2xl lg:grid-cols-[minmax(0,1.35fr)_380px] lg:items-start">
-            <div className="border-2 border-foreground bg-background p-xl md:p-2xl">
+            <div className="border-2 border-foreground/40 bg-background p-xl md:p-2xl">
               {currentStep === 'shipping' && (
                 <ShippingForm
                   onSubmit={handleShippingSubmit}
@@ -472,7 +472,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
 
-                  <div className="border-2 border-foreground px-lg py-md space-y-sm">
+                  <div className="border-2 border-foreground/40 px-lg py-md space-y-sm">
                     <p className="text-sm">
                       Estimated gateway amount:{' '}
                       <PriceDisplay amount={total} baseCurrency="USD" showCurrencyCode className="font-medium" />

@@ -272,7 +272,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
 
                     <div className="flex items-center justify-between gap-md">
-                      <div className="flex items-center gap-xs border-2 border-foreground">
+                      <div className="flex items-center gap-xs border-2 border-foreground/40">
                         <button
                           onClick={() => handleQuantityChange(item.variant_id, item.quantity - 1)}
                           disabled={pendingVariantId === item.variant_id || isClearingCart}
@@ -314,7 +314,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         {/* Footer */}
         {items.length > 0 && (
           <div className="border-t border-foreground/10 p-xl space-y-lg">
-            <div className="border-2 border-foreground px-md py-md space-y-1">
+            <div className="border-2 border-foreground/40 px-md py-md space-y-1">
               <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
                 Delivery
               </p>
@@ -335,7 +335,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 Promo Code
               </label>
               {couponCode ? (
-                <div className="flex items-center justify-between p-md bg-neutral-100 border-2 border-foreground">
+                <div className="flex items-center justify-between p-md bg-neutral-100 border-2 border-foreground/40">
                   <div className="flex items-center gap-sm">
                     <Tag size={16} strokeWidth={1.5} />
                     <div className="space-y-0.5">

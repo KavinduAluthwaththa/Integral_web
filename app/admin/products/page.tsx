@@ -356,7 +356,7 @@ export default function AdminProductsPage() {
             </div>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search products" className="w-full lg:w-72" />
-              <button onClick={startCreate} className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground bg-foreground px-4 text-xs uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-foreground/90 sm:w-auto">
+              <button onClick={startCreate} className="inline-flex h-10 w-full items-center justify-center border-2 border-foreground/40 bg-foreground px-4 text-xs uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-foreground/90 sm:w-auto">
                 New Product
               </button>
             </div>

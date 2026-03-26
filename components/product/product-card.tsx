@@ -36,7 +36,7 @@ export function ProductCard({
 
   return (
     <article className={cn('group', className)} aria-label={`Product: ${name}`}>
-      <div className="relative aspect-square bg-secondary overflow-hidden border-2 border-foreground">
+      <div className="relative aspect-square bg-secondary overflow-hidden border-2 border-foreground/40">
         {/* Image Container */}
         <div className="relative w-full h-full">
           <Image
@@ -73,7 +73,7 @@ export function ProductCard({
         <div className="absolute top-md right-md">
           <button
             onClick={() => onFavorite?.(id)}
-            className="bg-background border-2 border-foreground p-sm hover:bg-secondary transition-colors"
+            className="bg-background border-2 border-foreground/40 p-sm hover:bg-secondary transition-colors"
             aria-label={isFavorited ? `Remove ${name} from favorites` : `Add ${name} to favorites`}
             aria-pressed={isFavorited}
           >

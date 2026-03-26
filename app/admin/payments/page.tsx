@@ -99,7 +99,7 @@ export default function AdminPaymentsPage() {
             </div>
             <button
               onClick={() => void loadData()}
-              className="h-10 w-full px-4 text-xs uppercase tracking-[0.2em] border-2 border-foreground bg-background transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto"
+              className="h-10 w-full px-4 text-xs uppercase tracking-[0.2em] border-2 border-foreground/40 bg-background transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto"
             >
               Refresh
             </button>
@@ -136,7 +136,7 @@ export default function AdminPaymentsPage() {
             </div>
           </section>
 
-          <section className="border-2 border-foreground p-lg space-y-4">
+          <section className="border-2 border-foreground/40 p-lg space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-light tracking-wide">Latest Events (detailed)</h2>
               <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Most recent 20 entries</span>

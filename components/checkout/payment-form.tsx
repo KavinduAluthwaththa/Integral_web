@@ -145,7 +145,7 @@ export function PaymentForm(props: PaymentFormProps) {
           </div>
         </div>
 
-        <div className="space-y-sm border-2 border-foreground px-lg py-md">
+        <div className="space-y-sm border-2 border-foreground/40 px-lg py-md">
           <div className="flex items-center gap-sm text-muted-foreground">
             <CreditCard size={16} strokeWidth={1.5} />
             <p className="text-xs uppercase tracking-[0.18em]">

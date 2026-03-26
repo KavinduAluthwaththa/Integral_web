@@ -37,7 +37,7 @@ export function ProductEditorPanel({
   onReset,
 }: ProductEditorPanelProps) {
   return (
-    <section className="border-2 border-foreground">
+    <section className="border-2 border-foreground/40">
       <div className="border-b-2 border-foreground px-lg py-md">
         <h2 className="text-sm uppercase tracking-[0.25em] text-muted-foreground">{selectedProduct ? 'Edit Product' : 'Create Product'}</h2>
       </div>
@@ -78,7 +78,7 @@ export function ProductEditorPanel({
             id="is-featured"
             checked={form.is_featured}
             onCheckedChange={(value) => onFormChange({ is_featured: Boolean(value) })}
-            className="h-4 w-4 rounded-none border-2 border-foreground bg-background focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=checked]:bg-foreground data-[state=checked]:text-background"
+            className="h-4 w-4 rounded-none border-2 border-foreground/40 bg-background focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=checked]:bg-foreground data-[state=checked]:text-background"
           />
           <label htmlFor="is-featured" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
             Feature on home page
@@ -93,7 +93,7 @@ export function ProductEditorPanel({
             multiple
             onChange={(event) => onImageUpload(event.target.files)}
             disabled={uploadingImages}
-            className="block w-full border-2 border-foreground bg-background px-md py-sm text-sm text-foreground transition-colors focus-visible:bg-input focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 file:mr-md file:border-2 file:border-foreground file:bg-background file:px-md file:py-xs file:text-xs file:uppercase file:tracking-[0.2em] file:text-foreground file:transition-colors hover:file:bg-foreground hover:file:text-background disabled:cursor-not-allowed disabled:opacity-50"
+            className="block w-full border-2 border-foreground/40 bg-background px-md py-sm text-sm text-foreground transition-colors focus-visible:bg-input focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 file:mr-md file:border-2 file:border-foreground file:bg-background file:px-md file:py-xs file:text-xs file:uppercase file:tracking-[0.2em] file:text-foreground file:transition-colors hover:file:bg-foreground hover:file:text-background disabled:cursor-not-allowed disabled:opacity-50"
           />
           <p className="text-xs text-muted-foreground">
             {uploadingImages ? 'Uploading images...' : 'Upload images to Supabase storage. Max file size is 5MB each.'}
@@ -103,10 +103,10 @@ export function ProductEditorPanel({
               <p className="text-xs text-muted-foreground">No images uploaded yet.</p>
             ) : (
               parseImages(form.images).map((image, index) => (
-                <div key={`${image}-${index}`} className="flex flex-col items-start gap-3 border-2 border-foreground px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div key={`${image}-${index}`} className="flex flex-col items-start gap-3 border-2 border-foreground/40 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="truncate text-xs text-muted-foreground">{image}</span>
                   <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-                    <label className="inline-flex h-8 w-full cursor-pointer items-center justify-center border-2 border-foreground px-3 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto">
+                    <label className="inline-flex h-8 w-full cursor-pointer items-center justify-center border-2 border-foreground/40 px-3 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background sm:w-auto">
                       Replace
                       <input
                         type="file"
@@ -136,7 +136,7 @@ export function ProductEditorPanel({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Variants</label>
-            <button onClick={onAddVariant} className="inline-flex h-9 items-center justify-center border-2 border-foreground px-3 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background">
+            <button onClick={onAddVariant} className="inline-flex h-9 items-center justify-center border-2 border-foreground/40 px-3 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background">
               Add Variant
             </button>
           </div>
@@ -151,7 +151,7 @@ export function ProductEditorPanel({
                   <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Stock</label>
                   <Input type="number" min="0" step="1" value={variant.stock} onChange={(event) => onUpdateVariant(index, 'stock', event.target.value)} />
                 </div>
-                <button onClick={() => onRemoveVariant(index)} disabled={form.variants.length === 1} className="inline-flex h-10 items-center justify-center border-2 border-foreground px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-40">
+                <button onClick={() => onRemoveVariant(index)} disabled={form.variants.length === 1} className="inline-flex h-10 items-center justify-center border-2 border-foreground/40 px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-40">
                   Remove
                 </button>
               </div>
@@ -160,10 +160,10 @@ export function ProductEditorPanel({
         </div>
 
         <div className="flex flex-wrap gap-3 pt-2">
-          <button onClick={onSave} disabled={saving} className="inline-flex h-10 items-center justify-center border-2 border-foreground bg-foreground px-4 text-xs uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50">
+          <button onClick={onSave} disabled={saving} className="inline-flex h-10 items-center justify-center border-2 border-foreground/40 bg-foreground px-4 text-xs uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50">
             {saving ? 'Saving...' : selectedProduct ? 'Update Product' : 'Create Product'}
           </button>
-          <button onClick={onReset} className="inline-flex h-10 items-center justify-center border-2 border-foreground px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background">
+          <button onClick={onReset} className="inline-flex h-10 items-center justify-center border-2 border-foreground/40 px-4 text-xs uppercase tracking-[0.2em] text-foreground transition-colors duration-300 hover:bg-foreground hover:text-background">
             Reset Form
           </button>
         </div>
