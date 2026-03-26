@@ -15,7 +15,7 @@ const VISUAL_TOTAL_SCROLL_VH = 3;
 const VISUAL_CARD_STAGGER = 0.05;
 const VISUAL_ANIMATION_WINDOW = 1 / 3;
 
-const VISUAL_TITLE_WORDS = "We Speak What You Lived, Bare Witness And Be Your Voice, Because ΓÇª".split(" ");
+const VISUAL_TITLE_WORDS = "We Speak What You Lived, Bare Witness And Be Your Voice, Because...".split(" ");
 
 export default function VisualScrollCards() {
   const visualRootRef = useRef(null);
