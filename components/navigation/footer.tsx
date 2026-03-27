@@ -8,7 +8,7 @@ export function Footer() {
           <div className="space-y-sm">
             <h3 className="font-display text-2xl font-semibold tracking-wide">Integral</h3>
             <p className="max-w-xs text-sm leading-relaxed text-background/75">
-              "Inspired by you to inspire you"
+              &quot;Inspired by you to inspire you&quot;
             </p>
           </div>
 
