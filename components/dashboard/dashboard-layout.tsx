@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navbar } from '@/components/navigation/navbar';
 import { useCart } from '@/lib/cart-context';
-import { User, MapPin, Package, Heart, Eye, LogOut } from 'lucide-react';
+import { User, MapPin, Package, Eye, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
@@ -17,7 +17,6 @@ const baseNavItems = [
   { href: '/dashboard', label: 'Profile', icon: User },
   { href: '/dashboard/addresses', label: 'Address Book', icon: MapPin },
   { href: '/dashboard/orders', label: 'Order History', icon: Package },
-  { href: '/dashboard/favorites', label: 'Favorites', icon: Heart },
   { href: '/dashboard/recently-viewed', label: 'Recently Viewed', icon: Eye },
 ];
 

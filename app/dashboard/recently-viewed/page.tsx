@@ -75,6 +75,7 @@ export default function RecentlyViewedPage() {
                       src={item.images[0]}
                       alt={item.name}
                       fill
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>

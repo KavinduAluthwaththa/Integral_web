@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ReactLenis as Lenis } from "lenis/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -274,9 +275,9 @@ export default function LandingLandingPage() {
           </div>
 
           <div className={styles.landingAboutCta}>
-            <button type="button" className={styles.landingShopNowBtn}>
+            <Link href="/shop" className={styles.landingShopNowBtn}>
               Shop Now
-            </button>
+            </Link>
           </div>
         </section>
 

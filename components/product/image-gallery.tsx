@@ -46,8 +46,8 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
           alt={`${productName} - Image ${currentIndex + 1}`}
           fill
           sizes="(max-width: 768px) 100vw, 55vw"
+          loading="eager"
           className="object-cover transition-opacity duration-300"
-          priority
         />
       </div>
     </div>

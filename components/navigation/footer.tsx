@@ -1,56 +1,45 @@
 import Link from 'next/link';
 
 export function Footer() {
-  const socialLinks = [
-    { href: 'https://instagram.com', label: 'Instagram' },
-    { href: 'https://x.com', label: 'X' },
-    { href: 'https://pinterest.com', label: 'Pinterest' },
-  ];
-
   return (
     <footer className="border-t-2 border-foreground/40 bg-foreground text-background py-3xl" role="contentinfo">
       <div className="container mx-auto px-md">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3xl">
-          <div className="space-y-md">
-            <h3 className="font-display font-bold uppercase text-xl">Streetwear</h3>
-            <p className="text-background/70 text-sm">
-              Minimal fashion for the modern urbanite.
+        <div className="grid grid-cols-1 gap-2xl lg:grid-cols-[1fr_1.3fr_1fr] lg:items-start">
+          <div className="space-y-sm">
+            <h3 className="font-display text-2xl font-semibold tracking-wide">Integral</h3>
+            <p className="max-w-xs text-sm leading-relaxed text-background/75">
+              "Inspired by you to inspire you"
             </p>
           </div>
 
-          <nav className="space-y-md" aria-label="Shop navigation">
-            <h4 className="font-display font-bold uppercase text-sm">Shop</h4>
-            <ul className="space-y-sm text-sm text-background/70">
-              <li><Link href="/shop" className="hover:text-background transition-colors">All Products</Link></li>
-              <li><Link href="/shop?category=All&sort=name-asc" className="hover:text-background transition-colors">Collections</Link></li>
-              <li><Link href="/shop?sort=newest" className="hover:text-background transition-colors">New Arrivals</Link></li>
-            </ul>
-          </nav>
+          <section className="space-y-md" aria-label="Newsletter sign up">
+            <h4 className="font-display text-2xl font-medium leading-tight">Raise your voice with us</h4>
+            <p className="text-sm text-background/70">Sign up to our newsletter</p>
+            <form className="flex w-full flex-col gap-sm sm:flex-row sm:items-end" action="/newsletter" method="get">
+              <label htmlFor="footer-newsletter-email" className="sr-only">Email address</label>
+              <input
+                id="footer-newsletter-email"
+                name="email"
+                type="email"
+                required
+                placeholder="Enter your email"
+                className="h-10 w-full border-b border-background/40 bg-transparent px-1 text-sm text-background placeholder:text-background/45 focus:border-background focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="h-10 shrink-0 border border-background/70 px-lg text-xs uppercase tracking-wider text-background transition-colors hover:bg-background hover:text-foreground"
+              >
+                Sign up
+              </button>
+            </form>
+          </section>
 
-          <nav className="space-y-md" aria-label="About navigation">
-            <h4 className="font-display font-bold uppercase text-sm">About</h4>
-            <ul className="space-y-sm text-sm text-background/70">
-              <li><Link href="/about" className="hover:text-background transition-colors">Our Story</Link></li>
-              <li><Link href="/newsletter" className="hover:text-background transition-colors">Newsletter</Link></li>
-            </ul>
-          </nav>
-
-          <nav className="space-y-md" aria-label="Social media navigation">
-            <h4 className="font-display font-bold uppercase text-sm">Follow</h4>
-            <ul className="space-y-sm text-sm text-background/70">
-              {socialLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-background transition-colors"
-                    aria-label={`Follow us on ${link.label}`}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+          <nav className="space-y-sm lg:justify-self-end" aria-label="Support navigation">
+            <ul className="space-y-sm text-sm text-background/75">
+              <li><Link href="/returns-exchange" className="transition-colors hover:text-background">Returns &amp; Exchange</Link></li>
+              <li><Link href="/shipping-policy" className="transition-colors hover:text-background">Shipping Policy</Link></li>
+              <li><Link href="/return-policy" className="transition-colors hover:text-background">Return Policy</Link></li>
+              <li><Link href="/contact-us" className="transition-colors hover:text-background">Contact Us</Link></li>
             </ul>
           </nav>
         </div>

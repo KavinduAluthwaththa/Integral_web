@@ -235,6 +235,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="96px"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </Link>

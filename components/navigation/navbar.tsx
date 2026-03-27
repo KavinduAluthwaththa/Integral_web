@@ -90,10 +90,6 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           </Link>
 
           <div className="absolute right-0 top-0 flex h-full">
-          <div className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground">
-            <CartIcon count={cartCount} onClick={onCartClick} className="group text-inherit transition-colors duration-300 hover:opacity-100" />
-          </div>
-
           <Link
             href="/shop"
             className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
@@ -102,8 +98,12 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
             <ShoppingBag size={20} strokeWidth={1.5} className="transition-colors duration-300 group-hover:text-background" />
           </Link>
 
+          <div className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground">
+            <CartIcon count={cartCount} onClick={onCartClick} className="group text-inherit transition-colors duration-300 hover:opacity-100" />
+          </div>
+
           <Link
-            href="/dashboard/favorites"
+            href="/favorites"
             className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
             aria-label="Favorites"
           >
@@ -152,6 +152,14 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
         </Link>
 
         <div className="flex items-center gap-sm">
+          <CartIcon count={cartCount} onClick={onCartClick} />
+          <Link
+            href="/favorites"
+            className="text-foreground/75 hover:text-foreground transition-colors"
+            aria-label="Favorites"
+          >
+            <Heart size={20} strokeWidth={1.5} />
+          </Link>
           <Link
             href="/shop"
             className="text-foreground/75 hover:text-foreground transition-colors"
@@ -159,14 +167,6 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           >
             <ShoppingBag size={20} strokeWidth={1.5} />
           </Link>
-          <Link
-            href="/dashboard/favorites"
-            className="text-foreground/75 hover:text-foreground transition-colors"
-            aria-label="Favorites"
-          >
-            <Heart size={20} strokeWidth={1.5} />
-          </Link>
-          <CartIcon count={cartCount} onClick={onCartClick} />
         </div>
       </div>
 
