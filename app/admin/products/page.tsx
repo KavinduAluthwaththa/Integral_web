@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/navigation/navbar';
 import { useCart } from '@/lib/cart-context';
@@ -11,6 +11,14 @@ import { Input } from '@/components/ui/input';
 import { CatalogList } from '@/components/admin/products';
 
 export default function AdminProductsPage() {
+  return (
+    <Suspense fallback={<AdminProductsFallback />}>
+      <AdminProductsPageContent />
+    </Suspense>
+  );
+}
+
+function AdminProductsPageContent() {
   const { session } = useAuth();
   const { uniqueItemCount } = useCart();
   const { isAdmin, checkingAdmin } = useAdminGuard();
@@ -172,5 +180,15 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
     </>
+  );
+}
+
+function AdminProductsFallback() {
+  return (
+    <main className="min-h-screen bg-background pt-4xl pb-4xl">
+      <div className="max-w-7xl mx-auto px-xl flex items-center justify-center h-64 text-muted-foreground">
+        Loading admin products...
+      </div>
+    </main>
   );
 }
