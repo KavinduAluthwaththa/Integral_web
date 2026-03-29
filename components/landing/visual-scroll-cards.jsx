@@ -27,8 +27,8 @@ export default function VisualScrollCards() {
     () => [
       {
         visualCardId: "visual-card-1",
-        visualFrontSrc: "/visual/card.png",
-        visualFrontAlt: "Card Image",
+        visualFrontSrc: "/landing/artist.png",
+        visualFrontAlt: "Artist portrait",
         visualBackText: "your\nstory\nmatters",
       },
     ],

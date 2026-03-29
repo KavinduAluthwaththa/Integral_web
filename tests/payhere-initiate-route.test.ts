@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const {
   getUserSupabaseClientMock,
-  getServiceSupabaseClientMock,
   convertCurrencyMock,
   getPayHereConfigMock,
   getPayHereEndpointMock,
@@ -11,7 +10,6 @@ const {
   buildRequestSignatureMock,
 } = vi.hoisted(() => ({
   getUserSupabaseClientMock: vi.fn(),
-  getServiceSupabaseClientMock: vi.fn(),
   convertCurrencyMock: vi.fn(),
   getPayHereConfigMock: vi.fn(),
   getPayHereEndpointMock: vi.fn(),
@@ -21,10 +19,6 @@ const {
 
 vi.mock('@/lib/server-user-auth', () => ({
   getUserSupabaseClient: getUserSupabaseClientMock,
-}));
-
-vi.mock('@/lib/supabase-service', () => ({
-  getServiceSupabaseClient: getServiceSupabaseClientMock,
 }));
 
 vi.mock('@/lib/currency-service-api', () => ({
@@ -85,15 +79,6 @@ describe('payhere initiate api route', () => {
     getPayHereEndpointMock.mockReturnValue('https://sandbox.payhere.lk/pay/checkout');
     normalizePayHereCurrencyMock.mockReturnValue('USD');
     buildRequestSignatureMock.mockReturnValue('HASH123');
-
-    const serviceUpdateEqUserMock = vi.fn().mockResolvedValue({ error: null });
-    const serviceUpdateEqIdMock = vi.fn().mockReturnValue({ eq: serviceUpdateEqUserMock });
-    const serviceUpdateMock = vi.fn().mockReturnValue({ eq: serviceUpdateEqIdMock });
-    const serviceFromMock = vi.fn().mockReturnValue({ update: serviceUpdateMock });
-
-    getServiceSupabaseClientMock.mockReturnValue({
-      from: serviceFromMock,
-    });
   });
 
   it('returns auth response when user auth fails', async () => {
@@ -139,8 +124,7 @@ describe('payhere initiate api route', () => {
           id: 'o1',
           order_number: 'ORD-1',
           total: 120,
-          payment_status: 'paid',
-          payment_method: 'payhere',
+          status: 'completed',
         },
         error: null,
       }),
@@ -160,8 +144,7 @@ describe('payhere initiate api route', () => {
           id: 'o1',
           order_number: 'ORD-1',
           total: 0,
-          payment_status: 'pending',
-          payment_method: null,
+          status: 'pending',
         },
         error: null,
       }),
@@ -184,8 +167,7 @@ describe('payhere initiate api route', () => {
           id: 'o1',
           order_number: 'ORD-1',
           total: 120,
-          payment_status: 'pending',
-          payment_method: null,
+          status: 'pending',
         },
         error: null,
       }),
@@ -205,8 +187,7 @@ describe('payhere initiate api route', () => {
           id: 'o1',
           order_number: 'ORD-1',
           total: 120,
-          payment_status: 'pending',
-          payment_method: null,
+          status: 'processing',
         },
         error: null,
       }),
@@ -236,6 +217,51 @@ describe('payhere initiate api route', () => {
       orderId: 'ORD-1',
       amount: 120,
       currency: 'USD',
+    });
+  });
+
+  it('converts non-USD currency and routes to payhere', async () => {
+    normalizePayHereCurrencyMock.mockReturnValueOnce('LKR');
+    convertCurrencyMock.mockResolvedValueOnce(360);
+
+    getUserSupabaseClientMock.mockResolvedValueOnce({
+      userId: 'user-1',
+      client: makeOrdersClient({
+        data: {
+          id: 'o2',
+          order_number: 'ORD-2',
+          total: 120,
+          status: 'processing',
+        },
+        error: null,
+      }),
+    });
+
+    const response = await POST(makeRequest({ orderId: 'o2', currency: 'LKR' }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      endpoint: 'https://sandbox.payhere.lk/pay/checkout',
+      payload: {
+        merchant_id: 'merchant-1',
+        return_url: 'https://example.test/return',
+        cancel_url: 'https://example.test/cancel',
+        notify_url: 'https://example.test/notify',
+        order_id: 'ORD-2',
+        items: 'ORD-2',
+        currency: 'LKR',
+        amount: '360.00',
+        hash: 'HASH123',
+      },
+    });
+
+    expect(convertCurrencyMock).toHaveBeenCalledWith(120, 'USD', 'LKR');
+    expect(buildRequestSignatureMock).toHaveBeenCalledWith({
+      merchantId: 'merchant-1',
+      merchantSecret: 'secret-1',
+      orderId: 'ORD-2',
+      amount: 360,
+      currency: 'LKR',
     });
   });
 });

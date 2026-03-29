@@ -53,13 +53,13 @@ function getBucketPathsFromImages(images: unknown): string[] {
   );
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!isValidProductId(id)) {
     return jsonError('Invalid product id', 400);
   }
@@ -85,13 +85,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ data });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!isValidProductId(id)) {
     return jsonError('Invalid product id', 400);
   }
@@ -156,19 +156,56 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const keepVariantIds = payload.variants.map((variant) => variant.id).filter(Boolean) as string[];
-  const variantRows = payload.variants.map((variant) => ({
-    id: variant.id,
-    product_id: id,
-    size: variant.size,
-    stock: variant.stock,
-  }));
 
-  const { error: upsertError } = await client
-    .from('product_variants')
-    .upsert(variantRows, { onConflict: 'id' });
+  // Split variants into update vs insert to avoid null IDs in upsert
+  const variantsToUpdate = payload.variants
+    .filter((variant) => Boolean(variant.id))
+    .map((variant) => ({
+      id: variant.id as string,
+      product_id: id,
+      size: variant.size,
+      stock: variant.stock,
+    }));
 
-  if (upsertError) {
-    return jsonError(upsertError.message, 500);
+  const variantsToInsert = payload.variants
+    .filter((variant) => !variant.id)
+    .map((variant) => ({
+      product_id: id,
+      size: variant.size,
+      stock: variant.stock,
+    }));
+  const variantRows = payload.variants.map((variant) => {
+    const base = {
+      product_id: id,
+      size: variant.size,
+      stock: variant.stock,
+    } as { id?: string; product_id: string; size: string; stock: number };
+
+    if (variant.id) {
+      base.id = variant.id;
+    }
+
+    return base;
+  });
+
+  if (variantsToUpdate.length > 0) {
+    const { error: updateVariantsError } = await client
+      .from('product_variants')
+      .upsert(variantsToUpdate, { onConflict: 'id' });
+
+    if (updateVariantsError) {
+      return jsonError(updateVariantsError.message, 500);
+    }
+  }
+
+  if (variantsToInsert.length > 0) {
+    const { error: insertVariantsError } = await client
+      .from('product_variants')
+      .insert(variantsToInsert);
+
+    if (insertVariantsError) {
+      return jsonError(insertVariantsError.message, 500);
+    }
   }
 
   const staleVariantIds = (existingVariants || [])

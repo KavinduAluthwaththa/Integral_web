@@ -2419,6 +2419,7 @@ END $$;
 CREATE OR REPLACE FUNCTION public.redeem_coupon(p_code text)
 RETURNS boolean
 LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN

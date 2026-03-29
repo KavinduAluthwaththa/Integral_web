@@ -60,5 +60,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+   // Restock inventory when an order is newly cancelled
+  if (updatePatch.status === 'cancelled' && existingOrder.status !== 'cancelled') {
+    const items = data?.order_items || [];
+
+    for (const item of items) {
+      const variantId = item?.product_variants?.id;
+      if (!variantId) continue;
+
+      const { error: restockError } = await client.rpc('update_stock', {
+        p_variant_id: variantId,
+        p_quantity_change: item.quantity,
+        p_change_type: 'restock',
+        p_order_id: id,
+        p_reason: 'order cancelled',
+      });
+
+      if (restockError) {
+        return NextResponse.json({ error: restockError.message }, { status: 500 });
+      }
+    }
+  }
+
   return NextResponse.json({ data });
 }

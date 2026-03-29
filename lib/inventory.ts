@@ -73,19 +73,32 @@ export async function checkCartStockAvailability(
 
 export async function processOrderStock(
   orderId: string,
-  sessionId: string
+  sessionId: string,
+  accessToken?: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('process_order_stock', {
-    p_order_id: orderId,
-    p_session_id: sessionId,
-  });
+  try {
+    const response = await fetch('/api/orders/process-stock', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ orderId, sessionId }),
+    });
 
-  if (error) {
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      const message = payload?.error || response.statusText || 'Error processing order stock';
+      console.error('Error processing order stock:', message);
+      throw new Error(message);
+    }
+
+    const payload = await response.json();
+    return Boolean(payload?.success);
+  } catch (error) {
     console.error('Error processing order stock:', error);
-    return false;
+    throw error;
   }
-
-  return data || false;
 }
 
 export async function updateStock(

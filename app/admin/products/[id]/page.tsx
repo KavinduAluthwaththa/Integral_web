@@ -1,13 +1,10 @@
-'use client';
-
 import { ProductEditorPage } from '../editor-page';
 
 type EditProductRouteProps = {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 };
 
-export default function EditProductRoute({ params }: EditProductRouteProps) {
-  return <ProductEditorPage productId={params.id} />;
+export default async function EditProductRoute({ params }: EditProductRouteProps) {
+  const { id } = await params;
+  return <ProductEditorPage productId={id} />;
 }

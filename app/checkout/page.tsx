@@ -218,7 +218,7 @@ export default function CheckoutPage() {
 
       if (updateError) throw updateError;
 
-      const stockProcessed = await processOrderStock(order.id, sessionId);
+      const stockProcessed = await processOrderStock(order.id, sessionId, session.access_token);
 
       if (!stockProcessed) {
         throw new Error('Failed to process stock for order');
@@ -231,7 +231,8 @@ export default function CheckoutPage() {
         );
 
         if (couponRedeemError || !couponRedeemed) {
-          throw couponRedeemError || new Error('Failed to redeem coupon');
+          const message = couponRedeemError?.message || 'Coupon is invalid or has reached its limit';
+          throw new Error(message);
         }
       }
 
@@ -273,13 +274,28 @@ export default function CheckoutPage() {
         console.error('Order confirmation email failed:', emailError);
       }
 
+      const [firstName, ...restName] = (shippingData.fullName || '').trim().split(' ');
+      const lastName = restName.join(' ').trim();
+
       const initiateResponse = await fetch('/api/payments/payhere/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ orderId: order.id, currency: currentCurrency }),
+        body: JSON.stringify({
+          orderId: order.id,
+          currency: currentCurrency,
+          customer: {
+            firstName: firstName || shippingData.fullName,
+            lastName: lastName || 'Customer',
+            email: shippingData.email,
+            phone: shippingData.phone,
+            address: [shippingData.addressLine1, shippingData.addressLine2].filter(Boolean).join(', '),
+            city: shippingData.city,
+            country: shippingData.country,
+          },
+        }),
       });
 
       if (!initiateResponse.ok) {
@@ -303,11 +319,11 @@ export default function CheckoutPage() {
       document.body.appendChild(form);
       await clearCart();
       form.submit();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
       toast({
         title: 'Payment failed',
-        description: 'There was an error processing your payment. Please try again.',
+        description: error?.message || 'There was an error processing your payment. Please try again.',
         variant: 'destructive',
       });
     } finally {

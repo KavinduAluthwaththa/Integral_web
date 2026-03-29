@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSupabaseClient } from '@/lib/server-user-auth';
-import { getServiceSupabaseClient } from '@/lib/supabase-service';
 import { convertCurrency } from '@/lib/currency-service-api';
 import { buildRequestSignature, getPayHereConfig, getPayHereEndpoint, normalizePayHereCurrency } from '@/lib/payhere';
 
 interface InitiateBody {
   orderId?: string;
   currency?: string;
+  customer?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -24,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order, error: orderError } = await client
     .from('orders')
-    .select('id, order_number, total, payment_status, payment_method')
+    .select('id, order_number, total, status')
     .eq('id', body.orderId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  if (order.payment_status === 'paid') {
+  if (order.status === 'paid' || order.status === 'completed') {
     return NextResponse.json({ error: 'Order already paid' }, { status: 400 });
   }
 
@@ -70,17 +78,6 @@ export async function POST(req: NextRequest) {
 
   const endpoint = getPayHereEndpoint(mode);
 
-  try {
-    const serviceClient = getServiceSupabaseClient();
-    await serviceClient
-      .from('orders')
-      .update({ payment_method: 'payhere', payment_status: 'pending' })
-      .eq('id', order.id)
-      .eq('user_id', userId);
-  } catch (error: any) {
-    console.error('Failed to update order payment_method/payment_status', error);
-  }
-
   const payload = {
     merchant_id: merchantId,
     return_url: returnUrl || `${process.env.NEXT_PUBLIC_SITE_URL || ''}/checkout/success?order=${order.id}`,
@@ -91,6 +88,13 @@ export async function POST(req: NextRequest) {
     currency,
     amount: amount.toFixed(2),
     hash: signature,
+    first_name: body.customer?.firstName || 'Customer',
+    last_name: body.customer?.lastName || '',
+    email: body.customer?.email || 'noreply@example.com',
+    phone: body.customer?.phone || '0000000000',
+    address: body.customer?.address || 'N/A',
+    city: body.customer?.city || 'N/A',
+    country: body.customer?.country || 'N/A',
   };
 
   return NextResponse.json({ endpoint, payload });
