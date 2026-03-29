@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function ForgotPasswordPage() {
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { sendPasswordReset } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background py-5xl">
         <div className="max-w-md mx-auto px-xl">
           <div className="space-y-3xl">

@@ -23,13 +23,13 @@ const baseNavItems = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { signOut, user } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
 
   const navItems = baseNavItems;
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
 
       <main className="min-h-screen bg-background pt-4xl pb-3xl">
         <div className="max-w-7xl mx-auto px-xl">

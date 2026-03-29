@@ -47,6 +47,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
           fill
           sizes="(max-width: 768px) 100vw, 55vw"
           loading="eager"
+          priority={currentIndex === 0}
           className="object-cover transition-opacity duration-300"
         />
       </div>

@@ -35,6 +35,7 @@ export default function AddressesPage() {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [profileDefaults, setProfileDefaults] = useState<{ full_name: string; phone: string }>({ full_name: '', phone: '' });
   const [formData, setFormData] = useState({
     label: 'Home',
     full_name: '',
@@ -47,19 +48,36 @@ export default function AddressesPage() {
     country: 'United States',
     is_default: false,
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const loadAddresses = useCallback(async () => {
     if (!user?.id) return;
 
-    const { data, error } = await supabase
-      .from('user_addresses')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
+    const [addressesResult, profileResult] = await Promise.all([
+      supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('user_profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .maybeSingle(),
+    ]);
 
-    if (!error && data) {
-      setAddresses(data);
+    if (!addressesResult.error && addressesResult.data) {
+      setAddresses(addressesResult.data);
+    }
+
+    if (!profileResult.error && profileResult.data) {
+      const defaults = {
+        full_name: profileResult.data.full_name || '',
+        phone: profileResult.data.phone || '',
+      };
+      setProfileDefaults(defaults);
+      setFormData((current) => ({ ...current, full_name: defaults.full_name || current.full_name, phone: current.phone || defaults.phone }));
     }
 
     setLoading(false);
@@ -76,13 +94,61 @@ export default function AddressesPage() {
     }
   }, [user, authLoading, router, loadAddresses]);
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone is required';
+    }
+
+    if (!formData.address_line1.trim()) {
+      errors.address_line1 = 'Address line 1 is required';
+    }
+
+    if (!formData.city.trim()) {
+      errors.city = 'City is required';
+    }
+
+    if (!formData.state.trim()) {
+      errors.state = 'State / Province is required';
+    }
+
+    if (!formData.country.trim()) {
+      errors.country = 'Country is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
+    if (!validateForm()) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Phone, address line 1, city, state/province, and country are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const fullName = (profileDefaults.full_name || formData.full_name || '').trim() || 'Account holder';
+
     const addressData = {
       ...formData,
+      full_name: fullName,
+      phone: formData.phone.trim(),
+      address_line1: formData.address_line1.trim(),
+      address_line2: formData.address_line2.trim(),
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      postal_code: formData.postal_code.trim(),
+      country: formData.country.trim(),
       user_id: user.id,
     };
+
+    setFormErrors({});
 
     let error;
 
@@ -142,7 +208,7 @@ export default function AddressesPage() {
     setEditingAddress(address);
     setFormData({
       label: address.label,
-      full_name: address.full_name,
+      full_name: profileDefaults.full_name || address.full_name,
       phone: address.phone,
       address_line1: address.address_line1,
       address_line2: address.address_line2 || '',
@@ -152,14 +218,15 @@ export default function AddressesPage() {
       country: address.country,
       is_default: address.is_default,
     });
+    setFormErrors({});
     setShowDialog(true);
   };
 
   const resetForm = () => {
     setFormData({
       label: 'Home',
-      full_name: '',
-      phone: '',
+      full_name: profileDefaults.full_name,
+      phone: profileDefaults.phone,
       address_line1: '',
       address_line2: '',
       city: '',
@@ -168,6 +235,7 @@ export default function AddressesPage() {
       country: 'United States',
       is_default: false,
     });
+    setFormErrors({});
   };
 
   if (authLoading || loading) {
@@ -289,14 +357,13 @@ export default function AddressesPage() {
 
               <div className="space-y-sm">
                 <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, full_name: e.target.value })
-                  }
-                  placeholder="John Doe"
-                />
+                <p className="text-sm font-medium" id="full_name">
+                  {formData.full_name || profileDefaults.full_name || 'Not set. Update in Profile Settings.'}
+                </p>
+                <p className="text-xs text-muted-foreground">Name is managed in Profile Settings.</p>
+                {formErrors.full_name && (
+                  <p className="text-xs text-red-600">{formErrors.full_name}</p>
+                )}
               </div>
 
               <div className="space-y-sm">
@@ -308,7 +375,11 @@ export default function AddressesPage() {
                     setFormData({ ...formData, phone: e.target.value })
                   }
                   placeholder="(555) 123-4567"
+                  className={formErrors.phone ? 'border-red-600' : ''}
                 />
+                {formErrors.phone && (
+                  <p className="text-xs text-red-600">{formErrors.phone}</p>
+                )}
               </div>
 
               <div className="space-y-sm">
@@ -320,7 +391,11 @@ export default function AddressesPage() {
                     setFormData({ ...formData, address_line1: e.target.value })
                   }
                   placeholder="123 Main Street"
+                  className={formErrors.address_line1 ? 'border-red-600' : ''}
                 />
+                {formErrors.address_line1 && (
+                  <p className="text-xs text-red-600">{formErrors.address_line1}</p>
+                )}
               </div>
 
               <div className="space-y-sm">
@@ -345,7 +420,11 @@ export default function AddressesPage() {
                       setFormData({ ...formData, city: e.target.value })
                     }
                     placeholder="New York"
+                    className={formErrors.city ? 'border-red-600' : ''}
                   />
+                  {formErrors.city && (
+                    <p className="text-xs text-red-600">{formErrors.city}</p>
+                  )}
                 </div>
 
                 <div className="space-y-sm">
@@ -357,7 +436,11 @@ export default function AddressesPage() {
                       setFormData({ ...formData, state: e.target.value })
                     }
                     placeholder="NY"
+                    className={formErrors.state ? 'border-red-600' : ''}
                   />
+                  {formErrors.state && (
+                    <p className="text-xs text-red-600">{formErrors.state}</p>
+                  )}
                 </div>
               </div>
 
@@ -383,7 +466,11 @@ export default function AddressesPage() {
                       setFormData({ ...formData, country: e.target.value })
                     }
                     placeholder="United States"
+                    className={formErrors.country ? 'border-red-600' : ''}
                   />
+                  {formErrors.country && (
+                    <p className="text-xs text-red-600">{formErrors.country}</p>
+                  )}
                 </div>
               </div>
 

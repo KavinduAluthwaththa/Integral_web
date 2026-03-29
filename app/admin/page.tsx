@@ -27,7 +27,7 @@ import Image from 'next/image';
 
 export default function AdminDashboard() {
   const { loading: authLoading } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { isAdmin, checkingAdmin } = useAdminGuard();
 
   const [salesOverview, setSalesOverview] = useState<SalesOverview | null>(null);
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
   if (authLoading || checkingAdmin || loading) {
     return (
       <>
-        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
         <main className="min-h-screen bg-background pt-4xl pb-4xl">
           <div className="max-w-7xl mx-auto px-xl">
             <div className="flex items-center justify-center h-64">
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl space-y-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -337,6 +337,7 @@ export default function AdminDashboard() {
                                 src={product.image}
                                 alt={product.name}
                                 fill
+                                sizes="64px"
                                 className="object-cover rounded"
                               />
                             )}
@@ -392,6 +393,7 @@ export default function AdminDashboard() {
                                 src={item.image}
                                 alt={item.productName}
                                 fill
+                                sizes="48px"
                                 className="object-cover rounded"
                               />
                             )}

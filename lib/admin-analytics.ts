@@ -84,8 +84,8 @@ export async function getSalesOverview(startDate?: Date, endDate?: Date): Promis
     .lte('created_at', previousEnd.toISOString());
 
   const { data: sessions } = await supabase
-    .from('session_analytics')
-    .select('id')
+     .from('session_analytics')
+     .select('id')
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
 

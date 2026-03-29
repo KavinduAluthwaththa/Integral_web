@@ -76,6 +76,7 @@ export async function getFeaturedProducts(limit = 3): Promise<FeaturedProduct[]>
     .from('products')
     .select('id, sku, name, images')
     .eq('is_featured', true)
+    .eq('is_hidden', false)
     .order('updated_at', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -87,6 +88,7 @@ export async function getFeaturedProducts(limit = 3): Promise<FeaturedProduct[]>
   const fallbackResult = await supabase
     .from('products')
     .select('id, sku, name, images')
+    .eq('is_hidden', false)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -101,6 +103,7 @@ export async function getProductNameSuggestions(limit = 120): Promise<string[]> 
   const { data, error } = await supabase
     .from('products')
     .select('name')
+    .eq('is_hidden', false)
     .order('name', { ascending: true })
     .limit(limit);
 
@@ -121,6 +124,7 @@ export async function getShopFilterData(): Promise<ShopFilterData> {
   const { data, error } = await supabase
     .from('products')
     .select('name, category, color')
+    .eq('is_hidden', false)
     .order('name');
 
   if (error || !data) {
@@ -154,7 +158,8 @@ export async function getShopProducts(params: ShopQueryParams): Promise<ShopQuer
 
   let query = supabase
     .from('products')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact' })
+    .eq('is_hidden', false);
 
   if (category !== 'All') {
     query = query.eq('category', category);

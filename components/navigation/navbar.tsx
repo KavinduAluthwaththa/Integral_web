@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Heart,
@@ -11,6 +11,8 @@ import {
 import { CartIcon } from '@/components/icons/cart-icon';
 
 import { useAuth } from '@/lib/auth-context';
+import { useCurrency } from '@/lib/currency-context-geo';
+import { CURRENCY_CODES, SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 interface NavbarProps {
   cartCount?: number;
@@ -21,6 +23,9 @@ interface NavbarProps {
 export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const { currentCurrency, setCurrency } = useCurrency();
+
+  const currencyOptions = useMemo(() => CURRENCY_CODES.map((code) => SUPPORTED_CURRENCIES[code]), []);
 
   const socialLinks = [
     { href: 'https://youtube.com', label: 'YouTube' },
@@ -90,6 +95,22 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           </Link>
 
           <div className="absolute right-0 top-0 flex h-full">
+          <div className="hidden lg:flex h-12 items-center border-l-2 border-foreground/40">
+            <label className="sr-only" htmlFor="currency-select">Select currency</label>
+            <select
+              id="currency-select"
+              className="h-full px-3 text-xs uppercase tracking-[0.2em] bg-transparent text-foreground/75 hover:text-foreground focus:outline-none"
+              value={currentCurrency}
+              onChange={(event) => setCurrency(event.target.value as any)}
+            >
+              {currencyOptions.map((currency) => (
+                <option key={currency.code} value={currency.code} className="text-foreground">
+                  {currency.code} — {currency.symbol}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Link
             href="/shop"
             className="group flex h-12 w-12 items-center justify-center border-l-2 border-foreground/40 text-foreground/75 transition-colors duration-300 hover:border-white hover:bg-foreground"
@@ -180,6 +201,20 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
             >
               Shop
             </Link>
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Currency</span>
+              <select
+                className="border-2 border-foreground/30 bg-background px-2 py-2 text-xs uppercase tracking-[0.18em] text-foreground"
+                value={currentCurrency}
+                onChange={(event) => setCurrency(event.target.value as any)}
+              >
+                {currencyOptions.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code} — {currency.symbol}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Link
               href={user ? '/dashboard' : '/login'}
               className="text-xs uppercase tracking-widest font-medium text-foreground/75 hover:text-foreground transition-colors"

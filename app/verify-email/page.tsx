@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 function VerifyEmailContent() {
   const params = useSearchParams();
   const email = params.get('email') || '';
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { resendVerificationEmail } = useAuth();
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
@@ -33,7 +33,7 @@ function VerifyEmailContent() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background py-5xl">
         <div className="max-w-md mx-auto px-xl text-center space-y-xl">
           <h1 className="text-3xl font-light tracking-wide">Verify Your Email</h1>

@@ -81,30 +81,44 @@ export async function trackSession(userId?: string) {
     localStorage.setItem('has_visited', 'true');
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from('session_analytics')
-    .select('id')
+    .select('id, page_views')
     .eq('session_id', sessionId)
     .maybeSingle();
 
+  if (selectError && selectError.code !== 'PGRST116') {
+    console.error('session_analytics select error', selectError.message);
+    return;
+  }
+
   if (existing) {
-    await supabase
+    const nextPageViews = (existing.page_views || 0) + 1;
+    const { error: updateError } = await supabase
       .from('session_analytics')
       .update({
         last_activity: new Date().toISOString(),
-        page_views: supabase.rpc('increment', { x: 1 }),
+        page_views: nextPageViews,
         user_id: userId || null,
         visitor_id: visitorId,
       })
       .eq('session_id', sessionId);
+
+    if (updateError) {
+      console.error('session_analytics update error', updateError.message);
+    }
   } else {
-    await supabase.from('session_analytics').insert({
+    const { error: insertError } = await supabase.from('session_analytics').insert({
       session_id: sessionId,
       user_id: userId || null,
       visitor_id: visitorId,
       is_returning: isReturning,
       page_views: 1,
     });
+
+    if (insertError) {
+      console.error('session_analytics insert error', insertError.message);
+    }
   }
 }
 

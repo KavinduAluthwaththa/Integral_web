@@ -23,6 +23,7 @@ export type { CartItem } from '@/lib/cart/service';
 interface CartContextType {
   items: CartItem[];
   itemCount: number;
+  uniqueItemCount: number;
   subtotal: number;
   discount: number;
   total: number;
@@ -59,6 +60,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     items.reduce((sum, item) => sum + item.quantity, 0),
     [items]
   );
+
+  const uniqueItemCount = useMemo(() => items.length, [items]);
 
   useEffect(() => {
     const savedCoupon = loadStoredCoupon();
@@ -197,6 +200,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         itemCount,
+        uniqueItemCount,
         subtotal,
         discount,
         total,

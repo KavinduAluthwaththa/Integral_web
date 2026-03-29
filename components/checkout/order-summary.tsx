@@ -32,6 +32,7 @@ export function OrderSummary({ shippingCost = 0, tax = 0 }: OrderSummaryProps) {
                   src={item.image}
                   alt={item.name}
                   fill
+                  sizes="(max-width: 768px) 25vw, 120px"
                   className="object-cover"
                 />
               </div>

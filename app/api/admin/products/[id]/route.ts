@@ -4,6 +4,22 @@ import { normalizeProductPayload, validateProductPayload } from '@/lib/admin';
 
 const PRODUCT_IMAGE_BUCKET = 'product-images';
 
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+async function readJson(request: NextRequest) {
+  try {
+    return await request.json();
+  } catch {
+    throw new Error('Invalid JSON body');
+  }
+}
+
+function isValidProductId(id: string) {
+  return /^[0-9a-fA-F-]{16,}$/.test(id.trim());
+}
+
 function getBucketPathFromImageUrl(url: string): string | null {
   if (!url) {
     return null;
@@ -37,13 +53,16 @@ function getBucketPathsFromImages(images: unknown): string[] {
   );
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = await params;
+  const { id } = params;
+  if (!isValidProductId(id)) {
+    return jsonError('Invalid product id', 400);
+  }
 
   const { client } = auth;
   const { data, error } = await client
@@ -56,44 +75,54 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return jsonError(error.message, 500);
   }
 
   if (!data) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return jsonError('Product not found', 404);
   }
 
   return NextResponse.json({ data });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = await params;
+  const { id } = params;
+  if (!isValidProductId(id)) {
+    return jsonError('Invalid product id', 400);
+  }
 
   const { client } = auth;
-  const payload = normalizeProductPayload(await req.json());
+  let rawBody: any;
+  try {
+    rawBody = await readJson(req);
+  } catch (error: any) {
+    return jsonError(error?.message || 'Invalid JSON body', 400);
+  }
+
+  const payload = normalizeProductPayload(rawBody);
   const validationError = validateProductPayload(payload);
 
   if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 });
+    return jsonError(validationError, 400);
   }
 
   const { data: existingProduct, error: existingProductError } = await client
     .from('products')
-    .select('images')
+    .select('images, size_chart_images')
     .eq('id', id)
     .maybeSingle();
 
   if (existingProductError) {
-    return NextResponse.json({ error: existingProductError.message }, { status: 500 });
+    return jsonError(existingProductError.message, 500);
   }
 
   if (!existingProduct) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return jsonError('Product not found', 404);
   }
 
   const { data: existingVariants, error: existingVariantsError } = await client
@@ -102,7 +131,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq('product_id', id);
 
   if (existingVariantsError) {
-    return NextResponse.json({ error: existingVariantsError.message }, { status: 500 });
+    return jsonError(existingVariantsError.message, 500);
   }
 
   const { error: productError } = await client
@@ -116,11 +145,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       color: payload.color,
       is_featured: payload.is_featured,
       images: payload.images,
+      is_hidden: payload.is_hidden,
+      is_limited_edition: payload.is_limited_edition,
+      size_chart_images: payload.size_chart_images,
     })
     .eq('id', id);
 
   if (productError) {
-    return NextResponse.json({ error: productError.message }, { status: 500 });
+    return jsonError(productError.message, 500);
   }
 
   const keepVariantIds = payload.variants.map((variant) => variant.id).filter(Boolean) as string[];
@@ -136,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .upsert(variantRows, { onConflict: 'id' });
 
   if (upsertError) {
-    return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    return jsonError(upsertError.message, 500);
   }
 
   const staleVariantIds = (existingVariants || [])
@@ -150,12 +182,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .in('id', staleVariantIds);
 
     if (deleteVariantsError) {
-      return NextResponse.json({ error: deleteVariantsError.message }, { status: 500 });
+      return jsonError(deleteVariantsError.message, 500);
     }
   }
 
-  const existingImagePaths = new Set(getBucketPathsFromImages(existingProduct.images));
-  const nextImagePaths = new Set(getBucketPathsFromImages(payload.images));
+  const existingImagePaths = new Set([
+    ...getBucketPathsFromImages(existingProduct.images),
+    ...getBucketPathsFromImages(existingProduct.size_chart_images),
+  ]);
+  const nextImagePaths = new Set([
+    ...getBucketPathsFromImages(payload.images),
+    ...getBucketPathsFromImages(payload.size_chart_images),
+  ]);
   const removedImagePaths = Array.from(existingImagePaths).filter((path) => !nextImagePaths.has(path));
 
   if (removedImagePaths.length > 0) {
@@ -178,36 +216,39 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return jsonError(error.message, 500);
   }
 
   return NextResponse.json({ data });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = await params;
+  const { id } = params;
+  if (!isValidProductId(id)) {
+    return jsonError('Invalid product id', 400);
+  }
 
   const { client } = auth;
   const { data: product, error: productFetchError } = await client
     .from('products')
-    .select('images')
+    .select('images, size_chart_images')
     .eq('id', id)
     .maybeSingle();
 
   if (productFetchError) {
-    return NextResponse.json({ error: productFetchError.message }, { status: 500 });
+    return jsonError(productFetchError.message, 500);
   }
 
   if (!product) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return jsonError('Product not found', 404);
   }
 
-  const imagePaths = getBucketPathsFromImages(product.images);
+  const imagePaths = getBucketPathsFromImages([...(product.images || []), ...(product.size_chart_images || [])]);
 
   if (imagePaths.length > 0) {
     const { error: storageError } = await client.storage
@@ -215,14 +256,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .remove(imagePaths);
 
     if (storageError) {
-      return NextResponse.json({ error: storageError.message }, { status: 500 });
+      return jsonError(storageError.message, 500);
     }
   }
 
   const { error } = await client.from('products').delete().eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return jsonError(error.message, 500);
   }
 
   return NextResponse.json({ success: true });

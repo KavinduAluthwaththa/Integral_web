@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { session, loading, updatePassword } = useAuth();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background py-5xl">
         <div className="max-w-md mx-auto px-xl">
           <div className="space-y-3xl">

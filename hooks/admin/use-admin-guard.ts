@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
@@ -10,6 +10,7 @@ export function useAdminGuard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const lastCheckedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -31,7 +32,14 @@ export function useAdminGuard() {
         if (isActive) {
           setIsAdmin(false);
           setCheckingAdmin(false);
+          lastCheckedUserId.current = null;
         }
+        return;
+      }
+
+      // Skip re-check if we already verified this user as admin to avoid flicker on token refresh.
+      if (lastCheckedUserId.current === user.id && isAdmin) {
+        setCheckingAdmin(false);
         return;
       }
 
@@ -56,6 +64,7 @@ export function useAdminGuard() {
 
       setIsAdmin(true);
       setCheckingAdmin(false);
+      lastCheckedUserId.current = user.id;
     };
 
     void verifyAdmin();

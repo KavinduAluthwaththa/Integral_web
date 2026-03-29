@@ -23,7 +23,7 @@ interface DemoProduct {
 }
 
 export default function EmailDemoPage() {
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const [email, setEmail] = useState('test@example.com');
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
@@ -247,7 +247,7 @@ export default function EmailDemoPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background py-5xl">
         <div className="max-w-7xl mx-auto px-xl">
           <div className="mb-8">

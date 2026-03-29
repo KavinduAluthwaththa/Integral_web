@@ -26,7 +26,7 @@ interface Favorite {
 export default function FavoritesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
 
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +79,7 @@ export default function FavoritesPage() {
   if (authLoading || loading) {
     return (
       <>
-        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
         <main className="min-h-screen bg-background py-4xl">
           <div className="container mx-auto px-md">
             <div className="flex items-center justify-center py-5xl">
@@ -93,7 +93,7 @@ export default function FavoritesPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background pb-3xl pt-4xl">
         <section className="container mx-auto max-w-7xl space-y-xl px-md">
           <div className="space-y-sm border-b border-foreground/10 pb-lg">
@@ -114,37 +114,42 @@ export default function FavoritesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-lg md:grid-cols-3 lg:grid-cols-4">
-              {favorites.map((favorite) => (
-                <article key={favorite.id} className="group space-y-md">
-                  <Link href={`/product/${favorite.products.sku}`}>
-                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
-                      <Image
-                        src={favorite.products.images[0]}
-                        alt={favorite.products.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                  </Link>
-
-                  <div className="space-y-xs">
+              {favorites.map((favorite, index) => {
+                const isAboveTheFold = index === 0;
+                return (
+                  <article key={favorite.id} className="group space-y-md">
                     <Link href={`/product/${favorite.products.sku}`}>
-                      <p className="text-sm tracking-wide hover:underline">{favorite.products.name}</p>
+                      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+                        <Image
+                          src={favorite.products.images[0]}
+                          alt={favorite.products.name}
+                          fill
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          loading={isAboveTheFold ? 'eager' : 'lazy'}
+                          priority={isAboveTheFold}
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
                     </Link>
-                    <p className="text-sm font-light">${favorite.products.price.toFixed(2)}</p>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => removeFavorite(favorite.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </article>
-              ))}
+                    <div className="space-y-xs">
+                      <Link href={`/product/${favorite.products.sku}`}>
+                        <p className="text-sm tracking-wide hover:underline">{favorite.products.name}</p>
+                      </Link>
+                      <p className="text-sm font-light">${favorite.products.price.toFixed(2)}</p>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => removeFavorite(favorite.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

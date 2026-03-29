@@ -15,7 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const { toast } = useToast();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
 
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-md mx-auto px-xl">

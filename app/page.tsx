@@ -7,12 +7,12 @@ import { CartDrawer } from '@/components/cart/cart-drawer';
 import { useCart } from '@/lib/cart-context';
 
 export default function Home() {
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => setIsCartOpen(true)} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => setIsCartOpen(true)} onSearchClick={() => {}} />
       <HomeCombined />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>

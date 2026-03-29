@@ -1,5 +1,9 @@
-import { Suspense } from 'react';
+'use client';
+
+import { Suspense, useState } from 'react';
 import { Header } from '@/components/navigation/header';
+import { CartDrawer } from '@/components/cart/cart-drawer';
+import { useCart } from '@/lib/cart-context';
 import { ShopContent } from './shop-content';
 
 function ShopLoadingFallback() {
@@ -11,12 +15,16 @@ function ShopLoadingFallback() {
 }
 
 export default function ShopPage() {
+  const { uniqueItemCount } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   return (
     <>
-      <Header />
+      <Header cartCount={uniqueItemCount} onCartClick={() => setIsCartOpen(true)} />
       <Suspense fallback={<ShopLoadingFallback />}>
         <ShopContent />
       </Suspense>
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   );
 }

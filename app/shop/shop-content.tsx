@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { CartDrawer } from '@/components/cart/cart-drawer';
 import { PriceDisplay } from '@/components/currency/price-display';
 import {
   Select,
@@ -27,7 +26,6 @@ function isShopSortBy(value: string): value is ShopSortBy {
 export function ShopContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const {
     products,
     categories,
@@ -101,54 +99,56 @@ export function ShopContent() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-16">
-              {products.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/product/${product.sku}`}
-                  className="group flex flex-col items-center"
-                  onClick={() => {
-                    void trackProductClick(product.id, user?.id);
-                  }}
-                >
-                  <div className="relative w-full aspect-[3/4] bg-secondary overflow-hidden mb-5">
-                    {product.images?.[0] ? (
-                      <Image
-                        src={product.images[0]}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        quality={85}
-                        loading="lazy"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+              {products.map((product, index) => {
+                const isAboveTheFold = index === 0;
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/product/${product.sku}`}
+                    className="group flex flex-col items-center"
+                    onClick={() => {
+                      void trackProductClick(product.id, user?.id);
+                    }}
+                  >
+                    <div className="relative w-full aspect-[3/4] bg-secondary overflow-hidden mb-5">
+                      {product.images?.[0] ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          quality={85}
+                          loading={isAboveTheFold ? 'eager' : 'lazy'}
+                          priority={isAboveTheFold}
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                          No catalog image
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center space-y-1.5">
+                      <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">{product.sku}</p>
+                      <h3 className="text-xs uppercase tracking-[0.2em] group-hover:text-muted-foreground transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{product.category} / {product.color}</p>
+                      <PriceDisplay
+                        amount={product.price}
+                        baseCurrency="USD"
+                        className="text-xs text-muted-foreground"
+                        showCurrencyCode
                       />
-                    ) : (
-                      <div className="flex h-full items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                        No catalog image
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-center space-y-1.5">
-                    <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">{product.sku}</p>
-                    <h3 className="text-xs uppercase tracking-[0.2em] group-hover:text-muted-foreground transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{product.category} / {product.color}</p>
-                    <PriceDisplay
-                      amount={product.price}
-                      baseCurrency="USD"
-                      className="text-xs text-muted-foreground"
-                      showCurrencyCode
-                    />
-                  </div>
-                </Link>
-              ))}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
 
         </div>
       </main>
-
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   );
 }

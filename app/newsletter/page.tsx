@@ -6,11 +6,11 @@ import { NewsletterSignup } from '@/components/newsletter/newsletter-signup';
 import { Sparkles, Tag, Shirt } from 'lucide-react';
 
 export default function NewsletterPage() {
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background text-foreground">
         <section className="pt-4xl pb-3xl border-b border-foreground/10">
           <div className="container mx-auto px-md max-w-5xl">

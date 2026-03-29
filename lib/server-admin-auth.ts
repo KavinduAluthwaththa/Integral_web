@@ -24,51 +24,57 @@ export async function getAdminSupabaseClient(req: NextRequest): Promise<
   | { client: any; userId: string }
   | { response: NextResponse }
 > {
-  const token = extractBearerToken(req);
+  try {
+    const token = extractBearerToken(req);
 
-  if (!token) {
-    return {
-      response: NextResponse.json({ error: 'Missing bearer token' }, { status: 401 }),
-    };
-  }
+    if (!token) {
+      return {
+        response: NextResponse.json({ error: 'Missing bearer token' }, { status: 401 }),
+      };
+    }
 
-  const { url, anonKey } = getSupabaseEnv();
+    const { url, anonKey } = getSupabaseEnv();
 
-  const authClient = createClient<any>(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+    const authClient = createClient<any>(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
-  const {
-    data: { user },
-    error: authError,
-  } = await authClient.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await authClient.auth.getUser(token);
 
-  if (authError || !user) {
-    return {
-      response: NextResponse.json({ error: 'Invalid auth token' }, { status: 401 }),
-    };
-  }
+    if (authError || !user) {
+      return {
+        response: NextResponse.json({ error: 'Invalid auth token' }, { status: 401 }),
+      };
+    }
 
-  const client = createClient<any>(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const client = createClient<any>(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    },
-  });
+    });
 
-  const { data: profile, error: profileError } = await client
-    .from('user_profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .maybeSingle();
+    const { data: profile, error: profileError } = await client
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (profileError || !profile?.is_admin) {
+    if (profileError || !profile?.is_admin) {
+      return {
+        response: NextResponse.json({ error: 'Admin access required' }, { status: 403 }),
+      };
+    }
+
+    return { client, userId: user.id };
+  } catch (error: any) {
     return {
-      response: NextResponse.json({ error: 'Admin access required' }, { status: 403 }),
+      response: NextResponse.json({ error: error?.message || 'Auth service unavailable' }, { status: 500 }),
     };
   }
-
-  return { client, userId: user.id };
 }

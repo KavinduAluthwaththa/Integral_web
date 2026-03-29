@@ -28,7 +28,7 @@ import { Clock, CircleCheck as CheckCircle2, Circle as XCircle, Package, DollarS
 
 export default function AdminReturnsPage() {
   const { session } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { isAdmin, checkingAdmin } = useAdminGuard();
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
@@ -200,7 +200,7 @@ export default function AdminReturnsPage() {
   if (checkingAdmin) {
     return (
       <>
-        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
         <main className="min-h-screen bg-background pt-4xl pb-4xl">
           <div className="max-w-7xl mx-auto px-xl">
             <div className="flex items-center justify-center h-64">
@@ -218,7 +218,7 @@ export default function AdminReturnsPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl">
           <div className="mb-8">

@@ -19,25 +19,22 @@ import { trackProductView, trackSizeSelect, trackAddToCart } from '@/lib/analyti
 import { useAuth } from '@/lib/auth-context';
 import {
   getProductRecommendations,
-  getRecentlyViewedProducts,
   RecommendedProduct,
   recordRecentlyViewedProduct,
   trackRecommendationAddToCart,
   trackRecommendationClick,
-  RecentlyViewedProduct,
 } from '@/lib/recommendations';
 
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
   const sku = params.sku as string;
-  const { addItem, itemCount } = useCart();
+  const { addItem, uniqueItemCount } = useCart();
   const { toast } = useToast();
   const { user } = useAuth();
 
   const [product, setProduct] = useState<ProductWithVariants | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<RecommendedProduct[]>([]);
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedProduct[]>([]);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
@@ -46,7 +43,6 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [variantStockInfo, setVariantStockInfo] = useState<Record<string, StockInfo>>({});
-  const [stockRealtimeStatus, setStockRealtimeStatus] = useState<'offline' | 'connecting' | 'live' | 'error'>('offline');
 
   const refreshVariantStockInfo = useCallback(async (variants: ProductWithVariants['product_variants']) => {
     if (!variants?.length) {
@@ -74,12 +70,20 @@ export default function ProductPage() {
           product_variants (*)
         `)
         .eq('sku', sku)
+        .eq('is_hidden', false)
         .maybeSingle();
 
       if (productError) throw productError;
       if (!productData) return;
 
-      setProduct(productData as ProductWithVariants);
+      const safeProduct = {
+        ...(productData as ProductWithVariants),
+        size_chart_images: (productData as any)?.size_chart_images || [],
+        is_limited_edition: Boolean((productData as any)?.is_limited_edition),
+        is_hidden: Boolean((productData as any)?.is_hidden),
+      } as ProductWithVariants & { size_chart_images: string[]; is_limited_edition: boolean; is_hidden: boolean };
+
+      setProduct(safeProduct);
 
       await trackProductView(productData.id, user?.id);
       await recordRecentlyViewedProduct(productData.id, user?.id);
@@ -112,21 +116,13 @@ export default function ProductPage() {
         setFavoriteId(null);
       }
 
-      const [recommendedProducts, viewedProducts] = await Promise.all([
-        getProductRecommendations({
-          currentProduct: productData,
-          userId: user?.id,
-          limit: 4,
-        }),
-        getRecentlyViewedProducts({
-          userId: user?.id,
-          excludeProductId: productData.id,
-          limit: 3,
-        }),
-      ]);
+      const recommendedProducts = await getProductRecommendations({
+        currentProduct: safeProduct,
+        userId: user?.id,
+        limit: 4,
+      });
 
       setRelatedProducts(recommendedProducts);
-      setRecentlyViewed(viewedProducts);
 
     } catch (error) {
       console.error('Error loading product:', error);
@@ -143,11 +139,9 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!product?.id || !product.product_variants?.length) {
-      setStockRealtimeStatus('offline');
       return;
     }
 
-    setStockRealtimeStatus('connecting');
     const variantIdSet = new Set(product.product_variants.map((variant) => variant.id));
 
     const refreshStockInfo = () => {
@@ -180,25 +174,10 @@ export default function ProductPage() {
           }
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setStockRealtimeStatus('live');
-          return;
-        }
-
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setStockRealtimeStatus('error');
-          return;
-        }
-
-        if (status === 'CLOSED') {
-          setStockRealtimeStatus('offline');
-        }
-      });
+      .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
-      setStockRealtimeStatus('offline');
     };
   }, [product?.id, product?.product_variants, refreshVariantStockInfo]);
 
@@ -333,20 +312,11 @@ export default function ProductPage() {
     }
   };
 
-  const stockRealtimeLabel =
-    stockRealtimeStatus === 'live'
-      ? 'Live stock updates active'
-      : stockRealtimeStatus === 'connecting'
-      ? 'Connecting live stock updates...'
-      : stockRealtimeStatus === 'error'
-      ? 'Live stock updates unavailable'
-      : 'Stock updates require refresh';
-
   if (loading) {
     return (
       <>
         <Header
-          cartCount={itemCount}
+          cartCount={uniqueItemCount}
           onCartClick={() => setIsCartOpen(true)}
           onSearchClick={() => {}}
         />
@@ -363,7 +333,7 @@ export default function ProductPage() {
     return (
       <>
         <Header
-          cartCount={itemCount}
+          cartCount={uniqueItemCount}
           onCartClick={() => setIsCartOpen(true)}
           onSearchClick={() => {}}
         />
@@ -382,7 +352,7 @@ export default function ProductPage() {
   return (
     <>
       <Header
-        cartCount={itemCount}
+        cartCount={uniqueItemCount}
         onCartClick={() => setIsCartOpen(true)}
         onSearchClick={() => {}}
       />
@@ -405,10 +375,17 @@ export default function ProductPage() {
 
             {/* Right: Product Info */}
             <div className="lg:sticky lg:top-24 space-y-0">
-              {/* Artist / Brand label */}
-              <p className="text-xs text-muted-foreground tracking-widest mb-2 font-light italic">
-                by Streetwear
-              </p>
+              {/* Brand label + limited badge */}
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground tracking-widest font-light italic">
+                  by Integral
+                </p>
+                {product.is_limited_edition ? (
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1">
+                    Limited edition
+                  </span>
+                ) : null}
+              </div>
 
               {/* Name */}
               <h1 className="text-3xl md:text-4xl font-light tracking-wide uppercase mb-6 leading-tight">
@@ -443,9 +420,16 @@ export default function ProductPage() {
                     </span>
                   )}
                 </div>
-                <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  {stockRealtimeLabel}
-                </p>
+                {product.size_chart_images?.length ? (
+                  <div className="mb-3 flex justify-end">
+                    <Link
+                      href={`/product/${product.sku}/size-chart`}
+                      className="text-[10px] uppercase tracking-[0.25em] text-foreground underline underline-offset-4"
+                    >
+                      View size chart
+                    </Link>
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap gap-2">
                   {product.product_variants?.map((variant) => {
                     const stockInfo = variantStockInfo[variant.id];
@@ -480,12 +464,13 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Limited edition note */}
-              <div className="py-3 border-t border-foreground/10">
-                <p className="text-xs text-muted-foreground">
-                  This collection is <strong className="text-foreground font-semibold">limited edition</strong>.
-                </p>
-              </div>
+              {product.is_limited_edition ? (
+                <div className="py-3 border-t border-foreground/10">
+                  <p className="text-xs text-muted-foreground">
+                    This collection is <strong className="text-foreground font-semibold">limited edition</strong> and may not restock.
+                  </p>
+                </div>
+              ) : null}
 
               {/* Add to Cart */}
               <div className="pt-4 space-y-3">
@@ -543,7 +528,6 @@ export default function ProductPage() {
 
           <ProductRecommendations
             relatedProducts={relatedProducts}
-            recentlyViewed={recentlyViewed}
             sourceProductId={product.id}
             userId={user?.id}
             onRecommendationClick={(recommendedProductId, sourceProductId, recommendationUserId) => {

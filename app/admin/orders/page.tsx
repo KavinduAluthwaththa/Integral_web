@@ -12,7 +12,7 @@ const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cance
 
 export default function AdminOrdersPage() {
   const { session } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { isAdmin, checkingAdmin } = useAdminGuard();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -109,7 +109,7 @@ export default function AdminOrdersPage() {
   if (checkingAdmin) {
     return (
       <>
-        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
         <main className="min-h-screen bg-background pt-4xl pb-4xl">
           <div className="max-w-7xl mx-auto px-xl flex items-center justify-center h-64 text-muted-foreground">
             Loading admin orders...
@@ -154,7 +154,7 @@ export default function AdminOrdersPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl space-y-6">
           <OrderFilters

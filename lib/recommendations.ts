@@ -105,13 +105,13 @@ async function getUserPreferenceProducts(userId: string): Promise<ProductPrefere
   const [favoritesResult, recentlyViewedResult] = await Promise.all([
     supabase
       .from('user_favorites')
-      .select('products(id, category, color, created_at)')
+      .select('products(id, category, color, created_at, is_hidden)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(12),
     supabase
       .from('recently_viewed')
-      .select('products(id, category, color, created_at)')
+      .select('products(id, category, color, created_at, is_hidden)')
       .eq('user_id', userId)
       .order('viewed_at', { ascending: false })
       .limit(12),
@@ -119,10 +119,10 @@ async function getUserPreferenceProducts(userId: string): Promise<ProductPrefere
 
   const favorites = (favoritesResult.data || [])
     .map((entry: any) => entry.products)
-    .filter(Boolean) as ProductPreference[];
+    .filter((product: any) => product && !product.is_hidden) as ProductPreference[];
   const recentlyViewed = (recentlyViewedResult.data || [])
     .map((entry: any) => entry.products)
-    .filter(Boolean) as ProductPreference[];
+    .filter((product: any) => product && !product.is_hidden) as ProductPreference[];
 
   return [...recentlyViewed, ...favorites];
 }
@@ -134,6 +134,7 @@ async function getGuestPreferenceProducts(): Promise<ProductPreference[]> {
   const { data } = await supabase
     .from('products')
     .select('id, category, color, created_at')
+    .eq('is_hidden', false)
     .in('id', recentIds);
 
   const productMap = new Map((data || []).map((product: any) => [product.id, product as ProductPreference]));
@@ -184,6 +185,7 @@ export async function getRecentlyViewedProducts(params: {
             category,
             color,
             images,
+            is_hidden,
             created_at,
             updated_at
           )
@@ -194,7 +196,7 @@ export async function getRecentlyViewedProducts(params: {
 
       return (data || [])
         .map((entry: any) => ({ ...(entry.products as Product), viewed_at: entry.viewed_at }))
-        .filter((product) => product.id !== excludeProductId)
+        .filter((product) => product.id !== excludeProductId && !product.is_hidden)
         .slice(0, limit);
     }
 
@@ -204,6 +206,7 @@ export async function getRecentlyViewedProducts(params: {
     const { data } = await supabase
       .from('products')
       .select('*')
+      .eq('is_hidden', false)
       .in('id', guestIds);
 
     const productMap = new Map((data || []).map((product: any) => [product.id, product as Product]));
@@ -233,6 +236,7 @@ export async function getProductRecommendations(params: RecommendationParams): P
       supabase
         .from('products')
         .select('*')
+        .eq('is_hidden', false)
         .neq('id', currentProduct.id)
         .limit(60),
       userId ? getUserPreferenceProducts(userId) : getGuestPreferenceProducts(),

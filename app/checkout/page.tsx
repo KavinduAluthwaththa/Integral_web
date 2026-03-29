@@ -33,7 +33,7 @@ function getSessionId(): string {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, itemCount, subtotal, discount, couponCode, clearCart } = useCart();
+  const { items, uniqueItemCount, subtotal, discount, couponCode, clearCart } = useCart();
   const { user, session } = useAuth();
   const { currentCurrency } = useCurrency();
   const { toast } = useToast();
@@ -397,7 +397,7 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
 
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="mx-auto max-w-7xl px-xl">

@@ -69,7 +69,10 @@ export interface ProductRecord {
   category: string;
   color: string;
   is_featured: boolean;
+  is_hidden: boolean;
+  is_limited_edition: boolean;
   images: string[];
+  size_chart_images: string[];
   created_at: string;
   product_variants: ProductVariant[];
 }
@@ -82,6 +85,9 @@ export interface ProductFormState {
   category: string;
   color: string;
   is_featured: boolean;
+  is_hidden: boolean;
+  is_limited_edition: boolean;
   images: string;
+  size_chart_images: string;
   variants: ProductVariant[];
 }

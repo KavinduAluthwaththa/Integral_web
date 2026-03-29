@@ -71,6 +71,10 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
       newErrors.postalCode = 'Postal code is required';
     }
 
+    if (!formData.country.trim()) {
+      newErrors.country = 'Country is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -226,7 +230,11 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
               value={formData.country}
               onChange={handleChange('country')}
               placeholder="United States"
+              className={errors.country ? 'border-red-500' : ''}
             />
+            {errors.country && (
+              <p className="text-xs text-red-500">{errors.country}</p>
+            )}
           </div>
         </div>
       </div>

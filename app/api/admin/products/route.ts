@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/server-admin-auth';
 import { normalizeProductPayload, validateProductPayload } from '@/lib/admin';
 
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+async function readJson(request: NextRequest) {
+  try {
+    return await request.json();
+  } catch {
+    throw new Error('Invalid JSON body');
+  }
+}
+
 export async function GET(req: NextRequest) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
@@ -31,11 +43,18 @@ export async function POST(req: NextRequest) {
   }
 
   const { client } = auth;
-  const payload = normalizeProductPayload(await req.json());
+  let rawBody: any;
+  try {
+    rawBody = await readJson(req);
+  } catch (error: any) {
+    return jsonError(error?.message || 'Invalid JSON body', 400);
+  }
+
+  const payload = normalizeProductPayload(rawBody);
   const validationError = validateProductPayload(payload);
 
   if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 });
+    return jsonError(validationError, 400);
   }
 
   const { data: product, error: productError } = await client
@@ -49,12 +68,15 @@ export async function POST(req: NextRequest) {
       color: payload.color,
       is_featured: payload.is_featured,
       images: payload.images,
+      is_hidden: payload.is_hidden,
+      is_limited_edition: payload.is_limited_edition,
+      size_chart_images: payload.size_chart_images,
     })
     .select('*')
     .single();
 
   if (productError || !product) {
-    return NextResponse.json({ error: productError?.message || 'Failed to create product' }, { status: 500 });
+    return jsonError(productError?.message || 'Failed to create product', 500);
   }
 
   const variantRows = payload.variants.map((variant) => ({
@@ -67,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   if (variantsError) {
     await client.from('products').delete().eq('id', product.id);
-    return NextResponse.json({ error: variantsError.message }, { status: 500 });
+    return jsonError(variantsError.message, 500);
   }
 
   const { data: createdProduct, error: createdProductError } = await client
@@ -80,7 +102,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (createdProductError) {
-    return NextResponse.json({ error: createdProductError.message }, { status: 500 });
+    return jsonError(createdProductError.message, 500);
   }
 
   return NextResponse.json({ data: createdProduct }, { status: 201 });

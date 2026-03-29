@@ -28,7 +28,7 @@ interface PayHereStats {
 
 export default function AdminPaymentsPage() {
   const { session } = useAuth();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
   const { isAdmin, checkingAdmin } = useAdminGuard();
   const apiRequest = useMemo(() => createAdminApiClient(session?.access_token), [session?.access_token]);
 
@@ -61,7 +61,7 @@ export default function AdminPaymentsPage() {
   if (checkingAdmin) {
     return (
       <>
-        <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+        <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
         <main className="min-h-screen bg-background pt-4xl pb-4xl">
           <div className="max-w-7xl mx-auto px-xl flex items-center justify-center h-64 text-muted-foreground">
             Loading payments...
@@ -89,7 +89,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-7xl mx-auto px-xl space-y-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">

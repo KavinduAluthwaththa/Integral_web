@@ -16,7 +16,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { signUp, signInWithGoogle, signInWithApple, resendVerificationEmail } = useAuth();
   const { toast } = useToast();
-  const { itemCount } = useCart();
+  const { uniqueItemCount } = useCart();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -98,7 +98,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <Navbar cartCount={itemCount} onCartClick={() => {}} onSearchClick={() => {}} />
+      <Navbar cartCount={uniqueItemCount} onCartClick={() => {}} onSearchClick={() => {}} />
 
       <main className="min-h-screen bg-background pt-4xl pb-4xl">
         <div className="max-w-md mx-auto px-xl">

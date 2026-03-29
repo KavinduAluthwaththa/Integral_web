@@ -24,12 +24,22 @@ export function CatalogList({ loading, products, onEdit, onDelete }: CatalogList
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-light tracking-wide">{product.name}</h3>
-                  <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{product.sku}</span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground">ID: {product.sku || '—'}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{product.category} / {product.color}</p>
-                {product.is_featured ? (
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-foreground">Featured</p>
-                ) : null}
+                <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em]">
+                  {product.is_featured ? (
+                    <span className="text-foreground">Featured</span>
+                  ) : null}
+                  {product.is_limited_edition ? (
+                    <span className="text-amber-600">Limited Edition</span>
+                  ) : null}
+                  {product.is_hidden ? (
+                    <span className="text-red-700">Hidden</span>
+                  ) : (
+                    <span className="text-green-700">Visible</span>
+                  )}
+                </div>
                 <p className="text-sm font-light tracking-wide">${product.price.toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">
                   Variants: {product.product_variants.map((variant) => `${variant.size} (${variant.stock})`).join(', ')}

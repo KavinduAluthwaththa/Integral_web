@@ -24,39 +24,45 @@ export async function getUserSupabaseClient(req: NextRequest): Promise<
   | { client: any; userId: string }
   | { response: NextResponse }
 > {
-  const token = extractBearerToken(req);
+  try {
+    const token = extractBearerToken(req);
 
-  if (!token) {
-    return {
-      response: NextResponse.json({ error: 'Missing bearer token' }, { status: 401 }),
-    };
-  }
+    if (!token) {
+      return {
+        response: NextResponse.json({ error: 'Missing bearer token' }, { status: 401 }),
+      };
+    }
 
-  const { url, anonKey } = getSupabaseEnv();
+    const { url, anonKey } = getSupabaseEnv();
 
-  const authClient = createClient<any>(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+    const authClient = createClient<any>(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
-  const {
-    data: { user },
-    error: authError,
-  } = await authClient.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await authClient.auth.getUser(token);
 
-  if (authError || !user) {
-    return {
-      response: NextResponse.json({ error: 'Invalid auth token' }, { status: 401 }),
-    };
-  }
+    if (authError || !user) {
+      return {
+        response: NextResponse.json({ error: 'Invalid auth token' }, { status: 401 }),
+      };
+    }
 
-  const client = createClient<any>(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const client = createClient<any>(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    },
-  });
+    });
 
-  return { client, userId: user.id };
+    return { client, userId: user.id };
+  } catch (error: any) {
+    return {
+      response: NextResponse.json({ error: error?.message || 'Auth service unavailable' }, { status: 500 }),
+    };
+  }
 }
