@@ -259,13 +259,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ data });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAdminSupabaseClient(req);
   if ('response' in auth) {
     return auth.response;
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!isValidProductId(id)) {
     return jsonError('Invalid product id', 400);
   }
