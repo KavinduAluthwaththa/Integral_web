@@ -39,6 +39,8 @@ export default function AddressesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [profileDefaults, setProfileDefaults] = useState<{ full_name: string; phone: string }>({ full_name: '', phone: '' });
+  const [sortOrder, setSortOrder] = useState<'newest' | 'priceLowHigh' | 'priceHighLow' | 'nameAZ' | 'nameZA'>('newest');
+  const [category, setCategory] = useState<string>('all'); // Placeholder for category
   const [formData, setFormData] = useState({
     label: 'Home',
     full_name: '',
@@ -61,9 +63,7 @@ export default function AddressesPage() {
       supabase
         .from('user_addresses')
         .select('*')
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false }),
+        .eq('user_id', user.id),
       supabase
         .from('user_profiles')
         .select('full_name, phone')
@@ -270,6 +270,40 @@ export default function AddressesPage() {
           </Button>
         </div>
 
+        {/* Inline filter/sort row */}
+        <div className="flex flex-row items-center justify-between gap-4 py-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="category-select" className="text-sm font-medium">Category</label>
+            <select
+              id="category-select"
+              className="border rounded px-2 py-1"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              style={{ minWidth: 120 }}
+            >
+              <option value="all">All</option>
+              {/* Add more categories as needed */}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="sort-select" className="text-sm font-medium">Sort</label>
+            <select
+              id="sort-select"
+              className="border rounded px-2 py-1"
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+              style={{ minWidth: 180 }}
+            >
+              <option value="newest">Newest</option>
+              <option value="priceLowHigh">Price: Low to High</option>
+              <option value="priceHighLow">Price: High to Low</option>
+              <option value="nameAZ">Name: A to Z</option>
+              <option value="nameZA">Name: Z to A</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Address list */}
         {addresses.length === 0 ? (
           <div className="text-center py-5xl space-y-md">
             <MapPin size={48} strokeWidth={1} className="mx-auto text-muted-foreground" />
@@ -280,56 +314,71 @@ export default function AddressesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
-            {addresses.map((address) => (
-              <div
-                key={address.id}
-                className="border border-foreground/10 p-lg space-y-md relative"
-              >
-                {address.is_default && (
-                  <div className="absolute top-md right-md">
-                    <span className="text-xs bg-foreground text-background px-sm py-xs">
-                      DEFAULT
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-xs">
-                  <p className="font-medium tracking-wide">{address.label}</p>
-                  <p className="text-sm">{address.full_name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {address.address_line1}
-                  </p>
-                  {address.address_line2 && (
-                    <p className="text-sm text-muted-foreground">
-                      {address.address_line2}
-                    </p>
+            {(() => {
+              let sorted = [...addresses];
+              if (sortOrder === 'newest') {
+                sorted.sort((a, b) => (b as any).created_at?.localeCompare((a as any).created_at));
+              } else if (sortOrder === 'priceLowHigh') {
+                sorted.sort((a, b) => (a as any).price - (b as any).price);
+              } else if (sortOrder === 'priceHighLow') {
+                sorted.sort((a, b) => (b as any).price - (a as any).price);
+              } else if (sortOrder === 'nameAZ') {
+                sorted.sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+              } else if (sortOrder === 'nameZA') {
+                sorted.sort((a, b) => (b.label || '').localeCompare(a.label || ''));
+              }
+              // Optionally filter by category if implemented
+              return sorted.map((address) => (
+                <div
+                  key={address.id}
+                  className="border border-foreground/10 p-lg space-y-md relative"
+                >
+                  {address.is_default && (
+                    <div className="absolute top-md right-md">
+                      <span className="text-xs bg-foreground text-background px-sm py-xs">
+                        DEFAULT
+                      </span>
+                    </div>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    {address.city}, {address.state} {address.postal_code}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{address.phone}</p>
-                </div>
 
-                <div className="flex gap-sm pt-md border-t border-foreground/10">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(address)}
-                  >
-                    <Edit size={14} className="mr-xs" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(address.id)}
-                  >
-                    <Trash2 size={14} className="mr-xs" />
-                    Delete
-                  </Button>
+                  <div className="space-y-xs">
+                    <p className="font-medium tracking-wide">{address.label}</p>
+                    <p className="text-sm">{address.full_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {address.address_line1}
+                    </p>
+                    {address.address_line2 && (
+                      <p className="text-sm text-muted-foreground">
+                        {address.address_line2}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {address.city}, {address.state} {address.postal_code}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{address.phone}</p>
+                  </div>
+
+                  <div className="flex gap-sm pt-md border-t border-foreground/10">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(address)}
+                    >
+                      <Edit size={14} className="mr-xs" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(address.id)}
+                    >
+                      <Trash2 size={14} className="mr-xs" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         )}
 

@@ -62,40 +62,38 @@ export function ShopContent() {
       <main className="bg-background min-h-screen">
         <div className="max-w-[1400px] mx-auto px-6 md:px-16 py-16 space-y-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6">
-            <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Category</p>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="h-10 w-full rounded-none border-2 border-[#F9F6EE] bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-2 border-[#F9F6EE] bg-background text-foreground">
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category} className="rounded-none focus:bg-foreground focus:text-background">
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1 md:items-end md:w-auto">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Sort</p>
-              <div className="flex flex-wrap gap-2">
-                {SORT_OPTIONS.map(option => (
-                  <button
-                    key={option.value}
-                    className={`px-4 py-2 border text-xs uppercase tracking-wider font-medium transition-colors
-                      ${sortBy === option.value
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'bg-background text-foreground border-foreground/20 hover:bg-foreground/10'}
-                    `}
-                    style={{ borderRadius: 0 }}
-                    onClick={() => setSortBy(option.value)}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
+            <div className="flex flex-row w-full justify-between gap-8">
+              {/* Category filter left */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="category-select" className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground whitespace-nowrap">Category</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger id="category-select" className="h-10 rounded-none border-2 border-[#F9F6EE] bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0 min-w-[140px]">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-2 border-[#F9F6EE] bg-background text-foreground">
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category} className="rounded-none focus:bg-foreground focus:text-background">
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Sort filter right */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-select" className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground whitespace-nowrap">Sort</label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger id="sort-select" className="h-10 rounded-none border-2 border-[#F9F6EE] bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0 min-w-[140px]">
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-2 border-[#F9F6EE] bg-background text-foreground">
+                    {SORT_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value} className="rounded-none focus:bg-foreground focus:text-background">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
