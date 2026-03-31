@@ -12,7 +12,8 @@ import { CartIcon } from '@/components/icons/cart-icon';
 
 import { useAuth } from '@/lib/auth-context';
 import { useCurrency } from '@/lib/currency-context-geo';
-import { CURRENCY_CODES, SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { currencyFlagMap } from '@/lib/currency-flags';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 interface NavbarProps {
   cartCount?: number;
@@ -25,7 +26,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
   const { user } = useAuth();
   const { currentCurrency, setCurrency } = useCurrency();
 
-  const currencyOptions = useMemo(() => CURRENCY_CODES.map((code) => SUPPORTED_CURRENCIES[code]), []);
+
 
   const socialLinks = [
     { href: 'https://youtube.com', label: 'YouTube' },
@@ -95,20 +96,33 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           </Link>
 
           <div className="absolute right-0 top-0 flex h-full">
-          <div className="hidden lg:flex h-12 items-center border-l-2 border-foreground/40">
-            <label className="sr-only" htmlFor="currency-select">Select currency</label>
-            <select
-              id="currency-select"
-              className="h-full px-3 text-xs uppercase tracking-[0.2em] bg-transparent text-foreground/75 hover:text-foreground focus:outline-none"
-              value={currentCurrency}
-              onChange={(event) => setCurrency(event.target.value as any)}
+          <div className="hidden lg:flex h-12 items-center border-l-2 border-foreground/40 px-4 relative group">
+            <button
+              className="text-2xl focus:outline-none"
+              title={currentCurrency}
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              tabIndex={0}
             >
-              {currencyOptions.map((currency) => (
-                <option key={currency.code} value={currency.code} className="text-foreground">
-                  {currency.code} — {currency.symbol}
-                </option>
-              ))}
-            </select>
+              {currencyFlagMap[currentCurrency] || '🏳️'}
+            </button>
+            <div className="absolute right-0 top-12 z-50 hidden group-focus-within:block group-hover:block bg-background border border-foreground/20 rounded shadow-lg min-w-[100px]">
+              <ul className="py-2" tabIndex={-1} role="listbox">
+                {["LKR","USD","GBP","EUR","AUD"].map((code) => (
+                  <li key={code}>
+                    <button
+                      className={`flex items-center w-full px-4 py-2 text-base hover:bg-foreground/10 ${currentCurrency === code ? 'font-bold' : ''}`}
+                      onClick={() => setCurrency(code)}
+                      role="option"
+                      aria-selected={currentCurrency === code}
+                    >
+                      <span className="mr-2 text-lg">{currencyFlagMap[code] || '🏳️'}</span>
+                      <span className="font-mono">{code}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <Link

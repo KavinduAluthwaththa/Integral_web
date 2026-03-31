@@ -10,6 +10,9 @@ import { supabase } from '@/lib/supabase';
 import { Plus, MapPin, Trash2, CreditCard as Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { countries } from '@/lib/countries';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 import { Label } from '@/components/ui/label';
 
 interface Address {
@@ -47,6 +50,7 @@ export default function AddressesPage() {
     postal_code: '',
     country: 'United States',
     is_default: false,
+    countryCode: 'us',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -96,27 +100,22 @@ export default function AddressesPage() {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-
-    if (!formData.phone.trim()) {
-      errors.phone = 'Phone is required';
+    // Phone validation: must be at least 8 digits and start with country code
+    if (!formData.phone.trim() || formData.phone.replace(/\D/g, '').length < 8) {
+      errors.phone = 'Valid phone number is required';
     }
-
     if (!formData.address_line1.trim()) {
       errors.address_line1 = 'Address line 1 is required';
     }
-
     if (!formData.city.trim()) {
       errors.city = 'City is required';
     }
-
     if (!formData.state.trim()) {
       errors.state = 'State / Province is required';
     }
-
     if (!formData.country.trim()) {
       errors.country = 'Country is required';
     }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -368,14 +367,23 @@ export default function AddressesPage() {
 
               <div className="space-y-sm">
                 <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
+                <PhoneInput
+                  country={formData.countryCode}
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  placeholder="(555) 123-4567"
-                  className={formErrors.phone ? 'border-red-600' : ''}
+                  onChange={(value, country) => {
+                    setFormData({
+                      ...formData,
+                      phone: value,
+                      country: country?.name || formData.country,
+                      countryCode: country?.countryCode || formData.countryCode,
+                    });
+                  }}
+                  inputProps={{
+                    name: 'phone',
+                    required: true,
+                    className: formErrors.phone ? 'border-red-600' : '',
+                  }}
+                  inputStyle={{ width: '100%' }}
                 />
                 {formErrors.phone && (
                   <p className="text-xs text-red-600">{formErrors.phone}</p>
@@ -428,7 +436,7 @@ export default function AddressesPage() {
                 </div>
 
                 <div className="space-y-sm">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">State / Province</Label>
                   <Input
                     id="state"
                     value={formData.state}
@@ -459,15 +467,23 @@ export default function AddressesPage() {
 
                 <div className="space-y-sm">
                   <Label htmlFor="country">Country</Label>
-                  <Input
+                  <select
                     id="country"
                     value={formData.country}
-                    onChange={(e) =>
-                      setFormData({ ...formData, country: e.target.value })
-                    }
-                    placeholder="United States"
-                    className={formErrors.country ? 'border-red-600' : ''}
-                  />
+                    onChange={(e) => {
+                      const selected = countries.find(c => c.name === e.target.value);
+                      setFormData({
+                        ...formData,
+                        country: e.target.value,
+                        countryCode: selected?.code || formData.countryCode,
+                      });
+                    }}
+                    className={`w-full border rounded px-3 py-2 ${formErrors.country ? 'border-red-600' : ''}`}
+                  >
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.name}>{country.name}</option>
+                    ))}
+                  </select>
                   {formErrors.country && (
                     <p className="text-xs text-red-600">{formErrors.country}</p>
                   )}

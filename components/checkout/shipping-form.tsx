@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { countries } from '@/lib/countries';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
@@ -21,9 +23,10 @@ interface ShippingFormProps {
   onSubmit: (data: ShippingFormData) => void;
   onBack?: () => void;
   initialData?: Partial<ShippingFormData>;
+  userAddresses?: any[];
 }
 
-export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProps) {
+export function ShippingForm({ onSubmit, onBack, initialData, userAddresses = [] }: ShippingFormProps) {
   const [formData, setFormData] = useState<ShippingFormData>({
     fullName: initialData?.fullName || '',
     email: initialData?.email || '',
@@ -35,6 +38,16 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
     postalCode: initialData?.postalCode || '',
     country: initialData?.country || 'United States',
   });
+
+  // Sync formData with initialData when initialData changes
+  useEffect(() => {
+    setFormData(formData => ({
+      ...formData,
+      ...initialData,
+      country: initialData?.country || formData.country || 'United States',
+    }));
+  }, [initialData]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingFormData, string>>>({});
 
@@ -98,6 +111,40 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
   return (
     <form onSubmit={handleSubmit} className="space-y-xl">
       <div className="space-y-lg">
+        {userAddresses.length > 0 && (
+          <div className="space-y-sm">
+            <Label htmlFor="address-select">Saved Addresses</Label>
+            <select
+              id="address-select"
+              className="w-full border px-2 py-2 rounded"
+              value={selectedAddressId}
+              onChange={e => {
+                setSelectedAddressId(e.target.value);
+                const addr = userAddresses.find(a => a.id === e.target.value);
+                if (addr) {
+                  setFormData({
+                    fullName: addr.full_name,
+                    email: formData.email, // keep email from auth
+                    phone: addr.phone,
+                    addressLine1: addr.address_line1,
+                    addressLine2: addr.address_line2 || '',
+                    city: addr.city,
+                    state: addr.state,
+                    postalCode: addr.postal_code,
+                    country: addr.country,
+                  });
+                }
+              }}
+            >
+              <option value="">Select a saved address</option>
+              {userAddresses.map(addr => (
+                <option key={addr.id} value={addr.id}>
+                  {addr.label || addr.full_name}, {addr.address_line1}, {addr.city}, {addr.country}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="space-y-sm border-b border-foreground/10 pb-lg">
           <p className="font-display text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
             Step One
@@ -225,13 +272,26 @@ export function ShippingForm({ onSubmit, onBack, initialData }: ShippingFormProp
 
           <div className="space-y-sm">
             <Label htmlFor="country">Country</Label>
-            <Input
-              id="country"
+            <Select
               value={formData.country}
-              onChange={handleChange('country')}
-              placeholder="United States"
-              className={errors.country ? 'border-red-500' : ''}
-            />
+              onValueChange={value => {
+                setFormData({ ...formData, country: value });
+                if (errors.country) {
+                  setErrors({ ...errors, country: undefined });
+                }
+              }}
+            >
+              <SelectTrigger id="country" className={errors.country ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map(country => (
+                  <SelectItem key={country.name} value={country.name}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.country && (
               <p className="text-xs text-red-500">{errors.country}</p>
             )}

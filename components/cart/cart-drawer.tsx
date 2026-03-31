@@ -378,19 +378,9 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               )}
             </div>
 
-            {/* Totals */}
+            {/* Total Only */}
             <div className="space-y-sm pt-lg border-t border-foreground/10">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Discount</span>
-                  <span className="text-green-600">-${discount.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between pt-sm border-t border-foreground/10">
+              <div className="flex items-center justify-between pt-sm">
                 <span className="text-sm uppercase tracking-wider">Total</span>
                 <span className="text-xl font-light">${total.toFixed(2)}</span>
               </div>

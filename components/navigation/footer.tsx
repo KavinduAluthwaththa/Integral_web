@@ -6,7 +6,20 @@ export function Footer() {
       <div className="container mx-auto px-md">
         <div className="grid grid-cols-1 gap-2xl lg:grid-cols-[1fr_1.3fr_1fr] lg:items-start">
           <div className="space-y-sm">
-            <h3 className="font-display text-2xl font-semibold tracking-wide">Integral</h3>
+            <span
+              className="block h-10 w-[120px] bg-background"
+              style={{
+                WebkitMaskImage: "url('/brand/logo/logo.svg')",
+                maskImage: "url('/brand/logo/logo.svg')",
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+              }}
+              aria-label="Integral logo"
+            />
             <p className="max-w-xs text-sm leading-relaxed text-background/75">
               &quot;Inspired by you to inspire you&quot;
             </p>
@@ -45,7 +58,7 @@ export function Footer() {
         </div>
 
         <div className="mt-3xl pt-xl border-t border-background/20 text-center text-sm text-background/60">
-          <p>&copy; {new Date().getFullYear()} Streetwear. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} integral. All rights reserved.</p>
         </div>
       </div>
     </footer>

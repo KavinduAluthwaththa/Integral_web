@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { SizeChartModal } from '@/components/product/size-chart-modal';
 import { Heart } from 'lucide-react';
 import { supabase, ProductWithVariants } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [variantStockInfo, setVariantStockInfo] = useState<Record<string, StockInfo>>({});
+  const [showSizeChart, setShowSizeChart] = useState(false);
 
   const refreshVariantStockInfo = useCallback(async (variants: ProductWithVariants['product_variants']) => {
     if (!variants?.length) {
@@ -422,14 +424,20 @@ export default function ProductPage() {
                 </div>
                 {product.size_chart_images?.length ? (
                   <div className="mb-3 flex justify-end">
-                    <Link
-                      href={`/product/${product.sku}/size-chart`}
+                    <button
+                      type="button"
                       className="text-[10px] uppercase tracking-[0.25em] text-foreground underline underline-offset-4"
+                      onClick={() => setShowSizeChart(true)}
                     >
                       View size chart
-                    </Link>
+                    </button>
                   </div>
                 ) : null}
+                      <SizeChartModal
+                        images={product.size_chart_images || []}
+                        open={showSizeChart}
+                        onClose={() => setShowSizeChart(false)}
+                      />
                 <div className="flex flex-wrap gap-2">
                   {product.product_variants?.map((variant) => {
                     const stockInfo = variantStockInfo[variant.id];

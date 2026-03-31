@@ -17,10 +17,16 @@ import { trackProductClick } from '@/lib/analytics';
 import type { ShopSortBy } from '@/lib/domain/products';
 import { useShopCatalog } from '@/hooks/catalog/use-shop-catalog';
 
-const SORT_OPTIONS: ShopSortBy[] = ['newest', 'price-asc', 'price-desc', 'name-asc', 'name-desc'];
+const SORT_OPTIONS: { value: ShopSortBy; label: string }[] = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'name-asc', label: 'Name: A to Z' },
+  { value: 'name-desc', label: 'Name: Z to A' },
+];
 
 function isShopSortBy(value: string): value is ShopSortBy {
-  return SORT_OPTIONS.includes(value as ShopSortBy);
+  return SORT_OPTIONS.some(option => option.value === value);
 }
 
 export function ShopContent() {
@@ -55,7 +61,7 @@ export function ShopContent() {
     <>
       <main className="bg-background min-h-screen">
         <div className="max-w-[1400px] mx-auto px-6 md:px-16 py-16 space-y-10">
-          <div className="grid gap-4 border-b border-foreground/10 pb-6 md:grid-cols-2 md:items-end">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6">
             <div className="space-y-2">
               <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Category</p>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -72,20 +78,25 @@ export function ShopContent() {
               </Select>
             </div>
 
-            <div className="space-y-2 md:justify-self-end md:w-[220px]">
+            <div className="flex flex-col gap-1 md:items-end md:w-auto">
               <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Sort</p>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as ShopSortBy)}>
-                <SelectTrigger className="h-10 w-full rounded-none border-2 border-[#F9F6EE] bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-2 border-[#F9F6EE] bg-background text-foreground">
-                  <SelectItem value="newest" className="rounded-none focus:bg-foreground focus:text-background">Newest</SelectItem>
-                  <SelectItem value="price-asc" className="rounded-none focus:bg-foreground focus:text-background">Price: Low to High</SelectItem>
-                  <SelectItem value="price-desc" className="rounded-none focus:bg-foreground focus:text-background">Price: High to Low</SelectItem>
-                  <SelectItem value="name-asc" className="rounded-none focus:bg-foreground focus:text-background">Name: A to Z</SelectItem>
-                  <SelectItem value="name-desc" className="rounded-none focus:bg-foreground focus:text-background">Name: Z to A</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {SORT_OPTIONS.map(option => (
+                  <button
+                    key={option.value}
+                    className={`px-4 py-2 border text-xs uppercase tracking-wider font-medium transition-colors
+                      ${sortBy === option.value
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-background text-foreground border-foreground/20 hover:bg-foreground/10'}
+                    `}
+                    style={{ borderRadius: 0 }}
+                    onClick={() => setSortBy(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -98,7 +109,7 @@ export function ShopContent() {
               <p className="text-muted-foreground text-xs tracking-[0.3em] uppercase">No products found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-20">
               {products.map((product, index) => {
                 const isAboveTheFold = index === 0;
                 return (
