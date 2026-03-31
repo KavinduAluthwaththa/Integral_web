@@ -108,7 +108,7 @@ export async function trackSession(userId?: string) {
       console.error('session_analytics update error', updateError.message);
     }
   } else {
-    const { error: insertError } = await supabase.from('session_analytics').insert({
+    const { error: upsertError } = await supabase.from('session_analytics').upsert({
       session_id: sessionId,
       user_id: userId || null,
       visitor_id: visitorId,
@@ -116,8 +116,8 @@ export async function trackSession(userId?: string) {
       page_views: 1,
     });
 
-    if (insertError) {
-      console.error('session_analytics insert error', insertError.message);
+    if (upsertError) {
+      console.error('session_analytics upsert error', upsertError.message);
     }
   }
 }
