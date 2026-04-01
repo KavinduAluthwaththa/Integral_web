@@ -22,3 +22,9 @@ export const countries = [
   { name: 'Turkey', code: 'tr' },
   // ...add more as needed
 ];
+
+/** Lowercase ISO2 for react-phone-input-2 `country` prop */
+export function getCountryIso2ByName(countryName: string): string {
+  const found = countries.find((c) => c.name === countryName);
+  return found?.code ?? 'us';
+}

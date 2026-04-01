@@ -116,4 +116,43 @@
     white-space: nowrap;
     border-width: 0;
   }
+
+  /* Address book — align react-phone-input-2 with site Input styling */
+  .phone-input-addressbook {
+    @apply w-full font-sans;
+  }
+
+  .phone-input-addressbook .flag-dropdown {
+    @apply rounded-none border-2 border-r-0 border-foreground/40 bg-background;
+  }
+
+  .phone-input-addressbook .flag-dropdown.open {
+    @apply z-[200];
+  }
+
+  .phone-input-addressbook .selected-flag {
+    @apply rounded-none;
+  }
+
+  .phone-input-addressbook .form-control {
+    @apply !h-10 !w-full rounded-none border-2 border-foreground/40 bg-background py-sm pl-3 pr-3 text-base text-foreground shadow-none;
+    @apply placeholder:text-muted-foreground;
+    @apply transition-colors focus:border-foreground focus:bg-input focus:outline-none focus:ring-0;
+  }
+
+  .phone-input-addressbook.phone-input-error .form-control {
+    @apply border-red-600 focus:border-red-600;
+  }
+
+  .phone-input-addressbook .country-list {
+    @apply z-[200] max-h-52 overflow-y-auto rounded-none border-2 border-foreground/20 bg-popover text-sm text-popover-foreground shadow-md;
+  }
+
+  .phone-input-addressbook .search {
+    @apply m-2 w-[calc(100%-1rem)] border-2 border-foreground/20 bg-background px-2 py-1.5 text-sm;
+  }
+
+  .phone-input-addressbook .search-box {
+    @apply border-b border-foreground/10 bg-muted/30;
+  }
 }

@@ -1,29 +1,63 @@
-import React from 'react';
-import Image from 'next/image';
+'use client';
 
-export function SizeChartModal({ images, open, onClose }: { images: string[]; open: boolean; onClose: () => void }) {
-  if (!open) return null;
+import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+
+export function SizeChartModal({
+  images,
+  open,
+  onClose,
+}: {
+  images: string[];
+  open: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-background rounded-lg p-12 max-w-3xl w-full relative shadow-2xl border-2 border-foreground/20">
-        <button
-          className="absolute top-6 right-8 text-3xl text-muted-foreground hover:text-foreground"
-          onClick={onClose}
-          aria-label="Close size chart"
-        >
-          ×
-        </button>
-        <h2 className="text-[28px] font-mono font-bold mb-10 uppercase tracking-widest text-left">Size Chart</h2>
-        <div className="flex flex-col items-center gap-10">
-          {images.map((img, i) => (
-            <div key={img + i} className="w-full flex justify-center items-center bg-secondary border border-foreground/10 p-6 rounded-lg">
-              <div className="relative w-full max-w-md aspect-[3/4] flex items-center justify-center">
-                <Image src={img} alt={`Size chart ${i + 1}`} fill className="object-contain" />
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
+      <DialogContent
+        className={cn(
+          'flex max-h-[min(90dvh,880px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-w-xl sm:w-full',
+          '[&>button:last-child]:z-20'
+        )}
+      >
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 px-4 py-3 pr-14 text-left">
+          <DialogTitle className="text-xs font-mono uppercase tracking-[0.2em] text-foreground">
+            Size chart
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[min(78dvh,760px)] overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {images.map((img, i) => (
+              <div
+                key={img + i}
+                className="overflow-hidden rounded-md border border-foreground/10 bg-muted/20"
+              >
+                <div className="relative mx-auto h-[min(42dvh,360px)] w-full max-w-full sm:h-[min(45dvh,400px)]">
+                  <Image
+                    src={img}
+                    alt={`Size chart ${i + 1}`}
+                    fill
+                    className="object-contain object-center"
+                    sizes="(max-width: 640px) 95vw, 36rem"
+                    priority={i === 0}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

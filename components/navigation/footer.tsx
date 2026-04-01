@@ -5,22 +5,22 @@ export function Footer() {
     <footer className="border-t-2 border-foreground/40 bg-foreground text-background py-3xl" role="contentinfo">
       <div className="container mx-auto px-md">
         <div className="grid grid-cols-1 gap-2xl lg:grid-cols-[1fr_1.3fr_1fr] lg:items-start">
-          <div className="space-y-sm">
+          <div className="flex flex-col items-start gap-sm">
             <span
-              className="block h-10 w-[120px] bg-background"
+              className="block h-12 w-[min(100%,13rem)] shrink-0 bg-background"
               style={{
                 WebkitMaskImage: "url('/brand/logo/logo.svg')",
                 maskImage: "url('/brand/logo/logo.svg')",
                 WebkitMaskRepeat: 'no-repeat',
                 maskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskPosition: 'center',
+                WebkitMaskPosition: 'left center',
+                maskPosition: 'left center',
                 WebkitMaskSize: 'contain',
                 maskSize: 'contain',
               }}
               aria-label="Integral logo"
             />
-            <p className="max-w-xs text-sm leading-relaxed text-background/75">
+            <p className="m-0 max-w-xs text-left text-sm leading-relaxed text-background/75">
               &quot;Inspired by you to inspire you&quot;
             </p>
           </div>

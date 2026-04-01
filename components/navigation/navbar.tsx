@@ -12,8 +12,9 @@ import { CartIcon } from '@/components/icons/cart-icon';
 
 import { useAuth } from '@/lib/auth-context';
 import { useCurrency } from '@/lib/currency-context-geo';
-import { currencyFlagMap } from '@/lib/currency-flags';
-import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { SUPPORTED_CURRENCIES, type CurrencyCode } from '@/lib/currencies';
+
+const NAV_CURRENCY_CODES: readonly CurrencyCode[] = ['LKR', 'USD', 'GBP', 'EUR', 'AUD'];
 
 interface NavbarProps {
   cartCount?: number;
@@ -25,6 +26,11 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { currentCurrency, setCurrency } = useCurrency();
+
+  const currencyOptions = useMemo(
+    () => NAV_CURRENCY_CODES.map((code) => SUPPORTED_CURRENCIES[code]),
+    []
+  );
 
 
 
@@ -98,25 +104,24 @@ export function Navbar({ cartCount = 0, onCartClick, onSearchClick }: NavbarProp
           <div className="absolute right-0 top-0 flex h-full">
           <div className="hidden lg:flex h-12 items-center border-l-2 border-foreground/40 px-4 relative group">
             <button
-              className="text-2xl focus:outline-none"
+              className="text-sm font-mono uppercase tracking-[0.18em] focus:outline-none"
               title={currentCurrency}
               aria-haspopup="listbox"
               aria-expanded="false"
               tabIndex={0}
             >
-              {currencyFlagMap[currentCurrency] || '🏳️'}
+              {currentCurrency}
             </button>
-            <div className="absolute right-0 top-12 z-50 hidden group-focus-within:block group-hover:block bg-background border border-foreground/20 rounded shadow-lg min-w-[100px]">
-              <ul className="py-2" tabIndex={-1} role="listbox">
-                {["LKR","USD","GBP","EUR","AUD"].map((code) => (
+            <div className="absolute right-0 top-12 z-50 hidden group-focus-within:block group-hover:block bg-background border border-foreground/20 rounded shadow-lg min-w-[120px]">
+              <ul className="py-1 px-0" tabIndex={-1} role="listbox">
+                {NAV_CURRENCY_CODES.map((code) => (
                   <li key={code}>
                     <button
-                      className={`flex items-center w-full px-4 py-2 text-base hover:bg-foreground/10 ${currentCurrency === code ? 'font-bold' : ''}`}
+                      className={`block w-full px-3 py-1.5 text-base text-center hover:bg-foreground/10 ${currentCurrency === code ? 'font-bold' : ''}`}
                       onClick={() => setCurrency(code)}
                       role="option"
                       aria-selected={currentCurrency === code}
                     >
-                      <span className="mr-2 text-lg">{currencyFlagMap[code] || '🏳️'}</span>
                       <span className="font-mono">{code}</span>
                     </button>
                   </li>

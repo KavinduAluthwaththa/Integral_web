@@ -10,10 +10,15 @@ import { supabase } from '@/lib/supabase';
 import { Plus, MapPin, Trash2, CreditCard as Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { countries } from '@/lib/countries';
-import PhoneInput from 'react-phone-input-2';
+import { countries, getCountryIso2ByName } from '@/lib/countries';
+import { cn } from '@/lib/utils';
+import PhoneInput, { type CountryData } from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { Label } from '@/components/ui/label';
+
+function isPhoneCountryData(data: CountryData | object): data is CountryData {
+  return data != null && typeof data === 'object' && 'countryCode' in data;
+}
 
 interface Address {
   id: string;
@@ -81,7 +86,11 @@ export default function AddressesPage() {
         phone: profileResult.data.phone || '',
       };
       setProfileDefaults(defaults);
-      setFormData((current) => ({ ...current, full_name: defaults.full_name || current.full_name, phone: current.phone || defaults.phone }));
+      setFormData((current) => ({
+        ...current,
+        full_name: defaults.full_name || current.full_name,
+        phone: (current.phone || defaults.phone || '').replace(/\D/g, ''),
+      }));
     }
 
     setLoading(false);
@@ -100,9 +109,10 @@ export default function AddressesPage() {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    // Phone validation: must be at least 8 digits and start with country code
-    if (!formData.phone.trim() || formData.phone.replace(/\D/g, '').length < 8) {
-      errors.phone = 'Valid phone number is required';
+    const digits = formData.phone.replace(/\D/g, '');
+    // react-phone-input-2 stores full international number without leading +
+    if (!digits.length || digits.length < 8) {
+      errors.phone = 'Enter a valid number with country code (pick the flag or search countries).';
     }
     if (!formData.address_line1.trim()) {
       errors.address_line1 = 'Address line 1 is required';
@@ -208,7 +218,7 @@ export default function AddressesPage() {
     setFormData({
       label: address.label,
       full_name: profileDefaults.full_name || address.full_name,
-      phone: address.phone,
+      phone: address.phone.replace(/\D/g, ''),
       address_line1: address.address_line1,
       address_line2: address.address_line2 || '',
       city: address.city,
@@ -216,23 +226,27 @@ export default function AddressesPage() {
       postal_code: address.postal_code,
       country: address.country,
       is_default: address.is_default,
+      countryCode: getCountryIso2ByName(address.country),
     });
     setFormErrors({});
     setShowDialog(true);
   };
 
   const resetForm = () => {
+    const defaultCountry = 'United States';
+    const profilePhone = profileDefaults.phone?.replace(/\D/g, '') || '';
     setFormData({
       label: 'Home',
       full_name: profileDefaults.full_name,
-      phone: profileDefaults.phone,
+      phone: profilePhone,
       address_line1: '',
       address_line2: '',
       city: '',
       state: '',
       postal_code: '',
-      country: 'United States',
+      country: defaultCountry,
       is_default: false,
+      countryCode: getCountryIso2ByName(defaultCountry),
     });
     setFormErrors({});
   };
@@ -383,13 +397,16 @@ export default function AddressesPage() {
         )}
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingAddress ? 'Edit Address' : 'Add New Address'}
-              </DialogTitle>
-            </DialogHeader>
+          <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+            <div className="shrink-0 border-b border-border/60 px-6 pb-4 pt-6">
+              <DialogHeader className="space-y-0 text-left">
+                <DialogTitle>
+                  {editingAddress ? 'Edit Address' : 'Add New Address'}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-4">
             <div className="space-y-lg">
               <div className="space-y-sm">
                 <Label htmlFor="label">Address Label</Label>
@@ -415,27 +432,50 @@ export default function AddressesPage() {
               </div>
 
               <div className="space-y-sm">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Phone *</Label>
                 <PhoneInput
                   country={formData.countryCode}
                   value={formData.phone}
+                  preferredCountries={['lk', 'au', 'us', 'gb', 'nz', 'sg']}
+                  enableSearch
+                  disableSearchIcon={false}
+                  searchPlaceholder="Search country or code"
+                  enableLongNumbers
+                  countryCodeEditable={false}
+                  autoFormat
+                  containerClass={cn(
+                    'phone-input-addressbook',
+                    formErrors.phone && 'phone-input-error'
+                  )}
+                  inputProps={{
+                    id: 'phone',
+                    name: 'phone',
+                    type: 'tel',
+                    inputMode: 'tel',
+                    autoComplete: 'tel',
+                    required: true,
+                    'aria-invalid': formErrors.phone ? true : undefined,
+                    'aria-describedby': formErrors.phone ? 'phone-error' : 'phone-hint',
+                  }}
+                  dropdownStyle={{ zIndex: 200 }}
                   onChange={(value, country) => {
                     setFormData({
                       ...formData,
                       phone: value,
-                      country: country?.name || formData.country,
-                      countryCode: country?.countryCode || formData.countryCode,
+                      country: isPhoneCountryData(country) ? country.name : formData.country,
+                      countryCode: isPhoneCountryData(country)
+                        ? country.countryCode.toLowerCase()
+                        : formData.countryCode,
                     });
                   }}
-                  inputProps={{
-                    name: 'phone',
-                    required: true,
-                    className: formErrors.phone ? 'border-red-600' : '',
-                  }}
-                  inputStyle={{ width: '100%' }}
                 />
+                <p id="phone-hint" className="text-xs text-muted-foreground">
+                  Choose country with the flag, or search. Your number is saved with country code for shipping and SMS.
+                </p>
                 {formErrors.phone && (
-                  <p className="text-xs text-red-600">{formErrors.phone}</p>
+                  <p id="phone-error" role="alert" className="text-xs text-red-600">
+                    {formErrors.phone}
+                  </p>
                 )}
               </div>
 
@@ -570,6 +610,7 @@ export default function AddressesPage() {
                   Cancel
                 </Button>
               </div>
+            </div>
             </div>
           </DialogContent>
         </Dialog>
