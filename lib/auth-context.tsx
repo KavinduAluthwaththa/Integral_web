@@ -31,8 +31,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isActive = true;
 
     const refreshSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (!isActive) return;
+
+      if (error) {
+        const isInvalidRefreshToken =
+          error.message.includes('Invalid Refresh Token') ||
+          error.message.includes('Refresh Token Not Found');
+
+        if (isInvalidRefreshToken) {
+          await supabase.auth.signOut({ scope: 'local' });
+          if (!isActive) return;
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        console.error('auth session restore error', error.message);
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

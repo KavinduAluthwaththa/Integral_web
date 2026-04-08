@@ -81,51 +81,27 @@ export async function trackSession(userId?: string) {
     localStorage.setItem('has_visited', 'true');
   }
 
-  const { data: existing, error: selectError } = await supabase
-    .from('session_analytics')
-    .select('id, page_views')
-    .eq('session_id', sessionId)
-    .maybeSingle();
+  try {
+    const response = await fetch('/api/analytics/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sessionId,
+        userId: userId || null,
+        visitorId,
+        isReturning,
+      }),
+      keepalive: true,
+    });
 
-  if (selectError && selectError.code !== 'PGRST116') {
-    console.error('session_analytics select error', selectError.message);
-    return;
-  }
-
-  if (existing) {
-    const nextPageViews = (existing.page_views || 0) + 1;
-    const { error: updateError } = await supabase
-      .from('session_analytics')
-      .update({
-        last_activity: new Date().toISOString(),
-        page_views: nextPageViews,
-        user_id: userId || null,
-        visitor_id: visitorId,
-      })
-      .eq('session_id', sessionId);
-
-    if (updateError) {
-      console.error('session_analytics update error', updateError.message);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('session_analytics track error', errorText || `HTTP ${response.status}`);
     }
-  } else {
-    const { error: upsertError } = await supabase
-      .from('session_analytics')
-      .upsert(
-        {
-          session_id: sessionId,
-          user_id: userId || null,
-          visitor_id: visitorId,
-          is_returning: isReturning,
-          page_views: 1,
-        },
-        {
-          onConflict: 'session_id',
-        }
-      );
-
-    if (upsertError) {
-      console.error('session_analytics upsert error', upsertError.message);
-    }
+  } catch (error) {
+    console.error('session_analytics track error', error instanceof Error ? error.message : String(error));
   }
 }
 
