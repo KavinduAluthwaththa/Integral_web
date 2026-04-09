@@ -191,7 +191,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         aria-modal="true"
       >
         {/* Header */}
-        <header className="flex items-center justify-between p-xl border-b border-foreground/10">
+        <header className="flex items-center justify-between p-lg sm:p-xl border-b border-foreground/10">
           <h2 className="text-xl font-light tracking-wider">Shopping Cart</h2>
           <button
             onClick={onClose}
@@ -202,211 +202,211 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           </button>
         </header>
 
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto px-xl py-lg">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-lg">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-              <p className="text-muted-foreground text-sm">Loading cart...</p>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-lg">
-              <p className="text-muted-foreground text-sm">Your cart is empty</p>
-              <Button variant="outline" onClick={onClose}>
-                Continue Shopping
-              </Button>
-            </div>
-          ) : (
-            <div className="divide-y divide-foreground/10">
-              {items.map((item) => (
-                <div key={item.variant_id} className="flex gap-lg py-lg first:pt-0 last:pb-0">
-                  {(() => {
-                    const stockInfo = stockInfoByVariantId[item.variant_id];
-                    const canIncreaseQuantity = stockInfo ? item.quantity < stockInfo.available : true;
+        {/* Items — single scrollable list */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-lg py-md sm:px-xl sm:py-lg">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-lg">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
+                <p className="text-muted-foreground text-sm">Loading cart...</p>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-lg">
+                <p className="text-muted-foreground text-sm">Your cart is empty</p>
+                <Button variant="outline" onClick={onClose}>
+                  Continue Shopping
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-foreground/10">
+                {items.map((item) => (
+                  <div key={item.variant_id} className="flex gap-md py-lg first:pt-0 last:pb-0 sm:gap-lg">
+                    {(() => {
+                      const stockInfo = stockInfoByVariantId[item.variant_id];
+                      const canIncreaseQuantity = stockInfo ? item.quantity < stockInfo.available : true;
 
-                    return (
-                      <>
-                  <Link
-                    href={`/product/${item.sku}`}
-                    onClick={onClose}
-                    className="relative w-24 h-32 bg-neutral-100 flex-shrink-0 overflow-hidden group"
-                  >
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="96px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </Link>
+                      return (
+                        <>
+                    <Link
+                      href={`/product/${item.sku}`}
+                      onClick={onClose}
+                      className="relative w-20 h-28 bg-neutral-100 flex-shrink-0 overflow-hidden group sm:w-24 sm:h-32"
+                    >
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </Link>
 
-                  <div className="flex-1 flex flex-col justify-between gap-md">
-                    <div className="space-y-sm">
-                      <Link
-                        href={`/product/${item.sku}`}
-                        onClick={onClose}
-                        className="text-sm tracking-wide hover:text-muted-foreground transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                      <div className="flex items-center justify-between gap-md text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                        <p>Size {item.size}</p>
-                        <p>Qty {item.quantity}</p>
+                    <div className="flex-1 flex flex-col justify-between gap-sm sm:gap-md">
+                      <div className="space-y-sm">
+                        <Link
+                          href={`/product/${item.sku}`}
+                          onClick={onClose}
+                          className="text-sm tracking-wide hover:text-muted-foreground transition-colors"
+                        >
+                          {item.name}
+                        </Link>
+                        <div className="flex items-center justify-between gap-md text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                          <p>Size {item.size}</p>
+                          <p>Qty {item.quantity}</p>
+                        </div>
+                        <p className="text-sm font-light">${item.price.toFixed(2)} each</p>
+                        {stockInfo && (
+                          <p className={cn(
+                            'text-[10px] uppercase tracking-[0.2em]',
+                            stockInfo.isOutOfStock
+                              ? 'text-red-600'
+                              : stockInfo.isLowStock
+                              ? 'text-orange-600'
+                              : 'text-muted-foreground'
+                          )}>
+                            {stockInfo.isOutOfStock
+                              ? 'Out of stock'
+                              : stockInfo.isLowStock
+                              ? `Only ${stockInfo.available} left`
+                              : `${stockInfo.available} available`}
+                          </p>
+                        )}
                       </div>
-                      <p className="text-sm font-light">${item.price.toFixed(2)} each</p>
-                      {stockInfo && (
-                        <p className={cn(
-                          'text-[10px] uppercase tracking-[0.2em]',
-                          stockInfo.isOutOfStock
-                            ? 'text-red-600'
-                            : stockInfo.isLowStock
-                            ? 'text-orange-600'
-                            : 'text-muted-foreground'
-                        )}>
-                          {stockInfo.isOutOfStock
-                            ? 'Out of stock'
-                            : stockInfo.isLowStock
-                            ? `Only ${stockInfo.available} left`
-                            : `${stockInfo.available} available`}
-                        </p>
-                      )}
-                    </div>
 
-                    <div className="flex items-center justify-between gap-md">
-                      <div className="flex items-center gap-xs border-2 border-foreground/40">
+                      <div className="flex items-center justify-between gap-md">
+                        <div className="flex items-center gap-xs border-2 border-foreground/40">
+                          <button
+                            onClick={() => handleQuantityChange(item.variant_id, item.quantity - 1)}
+                            disabled={pendingVariantId === item.variant_id || isClearingCart}
+                            className="p-xs hover:bg-neutral-100 transition-colors disabled:opacity-40"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus size={14} strokeWidth={1.5} />
+                          </button>
+                          <span className="px-md text-sm min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleQuantityChange(item.variant_id, item.quantity + 1)}
+                            disabled={pendingVariantId === item.variant_id || isClearingCart || !canIncreaseQuantity}
+                            className="p-xs hover:bg-neutral-100 transition-colors disabled:opacity-40"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus size={14} strokeWidth={1.5} />
+                          </button>
+                        </div>
                         <button
-                          onClick={() => handleQuantityChange(item.variant_id, item.quantity - 1)}
+                          onClick={() => handleRemoveItem(item.variant_id)}
                           disabled={pendingVariantId === item.variant_id || isClearingCart}
-                          className="p-xs hover:bg-neutral-100 transition-colors disabled:opacity-40"
-                          aria-label="Decrease quantity"
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                         >
-                          <Minus size={14} strokeWidth={1.5} />
-                        </button>
-                        <span className="px-md text-sm min-w-[2rem] text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleQuantityChange(item.variant_id, item.quantity + 1)}
-                          disabled={pendingVariantId === item.variant_id || isClearingCart || !canIncreaseQuantity}
-                          className="p-xs hover:bg-neutral-100 transition-colors disabled:opacity-40"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={14} strokeWidth={1.5} />
+                          Remove
                         </button>
                       </div>
-                      <button
-                        onClick={() => handleRemoveItem(item.variant_id)}
-                        disabled={pendingVariantId === item.variant_id || isClearingCart}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
-                      >
-                        Remove
-                      </button>
                     </div>
+                        </>
+                      );
+                    })()}
                   </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t border-foreground/10 p-xl space-y-lg">
-            <div className="border-2 border-foreground/40 px-md py-md space-y-1">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                Delivery
-              </p>
-              {amountToFreeShipping > 0 ? (
-                <p className="text-xs uppercase tracking-[0.2em] text-foreground">
-                  Add ${amountToFreeShipping.toFixed(2)} more for free standard shipping
+          <div className="border-t border-foreground/10 p-lg sm:p-xl space-y-md max-h-[48vh] overflow-y-auto sm:max-h-none sm:overflow-visible sm:space-y-lg">
+              <div className="border-2 border-foreground/40 px-md py-md space-y-1">
+                <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                  Delivery
                 </p>
-              ) : (
-                <p className="text-xs uppercase tracking-[0.2em] text-foreground">
-                  Free standard shipping unlocked
-                </p>
-              )}
-            </div>
-
-            {/* Coupon Code */}
-            <div className="space-y-sm">
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Promo Code
-              </label>
-              {couponCode ? (
-                <div className="flex items-center justify-between p-md bg-neutral-100 border-2 border-foreground/40">
-                  <div className="flex items-center gap-sm">
-                    <Tag size={16} strokeWidth={1.5} />
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                        Applied
-                      </p>
-                      <span className="text-sm font-medium">{couponCode}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleRemoveCoupon}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-sm">
-                  <Input
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="Enter code"
-                    className="text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleApplyCoupon();
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleApplyCoupon}
-                    disabled={isApplyingCoupon || !couponInput.trim() || isClearingCart}
-                    className="whitespace-nowrap"
-                  >
-                    Apply
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Total Only */}
-            <div className="space-y-sm pt-lg border-t border-foreground/10">
-              <div className="flex items-center justify-between pt-sm">
-                <span className="text-sm uppercase tracking-wider">Total</span>
-                <span className="text-xl font-light">${total.toFixed(2)}</span>
+                {amountToFreeShipping > 0 ? (
+                  <p className="text-xs uppercase tracking-[0.2em] text-foreground">
+                    Add ${amountToFreeShipping.toFixed(2)} more for free standard shipping
+                  </p>
+                ) : (
+                  <p className="text-xs uppercase tracking-[0.2em] text-foreground">
+                    Free standard shipping unlocked
+                  </p>
+                )}
               </div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Shipping and tax finalize at checkout
-              </p>
-            </div>
 
-            {/* Actions */}
-            <div className="space-y-sm">
-              <Button
-                variant="default"
-                className="w-full"
-                size="lg"
-                onClick={handleCheckout}
-                disabled={isLoading || isClearingCart || items.length === 0}
-              >
-                Checkout
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleClearCart} disabled={isLoading || isClearingCart}>
-                {isClearingCart ? 'Clearing...' : 'Clear Cart'}
-              </Button>
-              <Button variant="ghost" className="w-full" onClick={onClose} disabled={isClearingCart}>
-                Continue Shopping
-              </Button>
-            </div>
+              {/* Coupon Code */}
+              <div className="space-y-sm">
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Promo Code
+                </label>
+                {couponCode ? (
+                  <div className="flex items-center justify-between p-md bg-neutral-100 border-2 border-foreground/40">
+                    <div className="flex items-center gap-sm">
+                      <Tag size={16} strokeWidth={1.5} />
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                          Applied
+                        </p>
+                        <span className="text-sm font-medium">{couponCode}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-sm">
+                    <Input
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      className="text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleApplyCoupon();
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon || !couponInput.trim() || isClearingCart}
+                      className="whitespace-nowrap"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Total Only */}
+              <div className="space-y-sm pt-lg border-t border-foreground/10">
+                <div className="flex items-center justify-between pt-sm">
+                  <span className="text-sm uppercase tracking-wider">Total</span>
+                  <span className="text-xl font-light">${total.toFixed(2)}</span>
+                </div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Shipping and tax finalize at checkout
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-sm">
+                <Button
+                  variant="default"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleCheckout}
+                  disabled={isLoading || isClearingCart || items.length === 0}
+                >
+                  Checkout
+                </Button>
+                <Button variant="outline" className="w-full" onClick={handleClearCart} disabled={isLoading || isClearingCart}>
+                  {isClearingCart ? 'Clearing...' : 'Clear Cart'}
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={onClose} disabled={isClearingCart}>
+                  Continue Shopping
+                </Button>
+              </div>
           </div>
         )}
       </aside>
