@@ -82,7 +82,7 @@ export function ShopContent() {
               {/* Sort filter right */}
               <div className="flex items-center gap-2">
                 <label htmlFor="sort-select" className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground whitespace-nowrap">Sort</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={(v) => { if (isShopSortBy(v)) setSortBy(v); }}>
                   <SelectTrigger id="sort-select" className="h-10 rounded-none border-2 border-[#F9F6EE] bg-background px-3 text-sm focus:ring-0 focus:ring-offset-0 min-w-[140px]">
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
